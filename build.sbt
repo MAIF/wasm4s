@@ -75,6 +75,12 @@ lazy val root = (project in file("."))
     ),
   )
 
-Compile / packageBin := (uberJar / assembly).value
+assembly / artifact := {
+  val art = (assembly / artifact).value
+  art.withClassifier(Some("assembly"))
+}
+
+addArtifact(assembly / artifact, assembly)
+
 assembly / test := {}
 assembly / assemblyJarName := s"wasm4s-bundle_${scalaVersion.value.split("\\.").init.mkString(".")}-${version.value}.jar"
