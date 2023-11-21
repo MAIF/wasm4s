@@ -23,8 +23,6 @@ jobs:
           sbt ';+compile;+test;+package;+assembly'
       - name: Generate SHA-256
         run: |
-          pwd
-          ls
           shasum -a 256 ./target/scala-2.13/wasm4s_2.13-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-2.13/wasm4s_2.13-${{ inputs.version }}.jar.sha256
           shasum -a 256 ./target/scala-2.13/wasm4s-bundle_2.13-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-2.13/wasm4s-bundle_2.13-${{ inputs.version }}.jar.sha256
           shasum -a 256 ./target/scala-2.12/wasm4s_2.12-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-2.12/wasm4s_2.12-${{ inputs.version }}.jar.sha256
