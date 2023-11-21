@@ -2,7 +2,7 @@
 
 this library provides a runtime to execute wasm function in a pooled vm paradigm
 
-![wasm4s-logo](./resource/wasm4s-logo.jpg)
+![wasm4s-logo](./resource/wasm4s-logo-transparent.png)
 
 ## how to use it
 
