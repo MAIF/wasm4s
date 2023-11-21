@@ -21,6 +21,8 @@ jobs:
           echo 'ThisBuild / version := "${{ inputs.version }}"' > version.sbt
       - name: build-libs
         id: build-libs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           sh ./update-extism.sh
           sbt ';+compile;+test;+package;+assembly;+publish'
