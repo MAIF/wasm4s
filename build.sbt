@@ -18,8 +18,8 @@ inThisBuild(
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     scmInfo := Some(
       ScmInfo(
-        url("https://github.com/MAIF/otoroshi"),
-        "scm:git@github.com:MAIF/otoroshi.git"
+        url("https://github.com/MAIF/wasm4s"),
+        "scm:git@github.com:MAIF/wasm4s.git"
       )
     ),
     publishMavenStyle := true,
