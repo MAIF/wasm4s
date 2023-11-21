@@ -1,6 +1,6 @@
-<div style="width: 100%; display: flex; justify-content: center;">
+<p align="center">
   <img src="./resources/wasm4s-logo-transparent.png" />
-</div>
+</p>
 
 # wasm4s
 
