@@ -1,5 +1,5 @@
 <div style="width: 100%; display: flex; justify-content: center;">
-![wasm4s-logo](./resources/wasm4s-logo-transparent.png)
+  <img src="./resources/wasm4s-logo-transparent.png" />
 </div>
 
 # wasm4s
