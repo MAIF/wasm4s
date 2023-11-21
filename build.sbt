@@ -5,7 +5,6 @@ lazy val scala213 = "2.13.11"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
 ThisBuild / scalaVersion     := scala212
-ThisBuild / version          := "1.0.0"
 ThisBuild / organization     := "io.otoroshi"
 ThisBuild / organizationName := "wasm4s"
 
@@ -58,9 +57,9 @@ lazy val root = (project in file("."))
   .settings(
     name := "wasm4s",
     crossScalaVersions := supportedScalaVersions,
-    //githubOwner := "MAIF",
-    //githubRepository := "wasm4s",
-    //githubTokenSource := TokenSource.Environment("GITHUB_PACKAGES_TOKEN"),
+    githubOwner := "MAIF",
+    githubRepository := "wasm4s",
+    githubTokenSource := TokenSource.Environment("GITHUB_PACKAGES_TOKEN"),
     libraryDependencies ++= Seq(
       munit % Test,
       "com.typesafe.play"     %% "play-ws"        % playWsVersion % "provided",

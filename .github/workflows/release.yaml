@@ -23,7 +23,7 @@ jobs:
         id: build-libs
         run: |
           sh ./update-extism.sh
-          sbt ';+compile;+test;+package;+assembly'
+          sbt ';+compile;+test;+package;+assembly;+publish'
       - name: Generate SHA-256
         run: |
           shasum -a 256 ./target/scala-2.13/wasm4s_2.13-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-2.13/wasm4s_2.13-${{ inputs.version }}.jar.sha256
