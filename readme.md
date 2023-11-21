@@ -2,6 +2,8 @@
 
 this library provides a runtime to execute wasm function in a pooled vm paradigm
 
+![wasm4s-logo](./resource/wasm4s-logo.jpg)
+
 ## how to use it
 
 first declare the dependency to wasm4s in your `build.sbt`
