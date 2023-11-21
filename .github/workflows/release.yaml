@@ -1,0 +1,42 @@
+name: release-wasm4s
+
+on: 
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number"
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: setup jdk11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - uses: coursier/cache-action@v5
+      - name: build libs
+        id: build libs
+        run: |
+          sh ./update-extism.sh
+          sbt ';+compile;+test;+package;+assembly'
+      - name: Generate SHA-256
+        run: |
+          shasum -a 256 ./target/scala-2.13/wasm4s_2.13-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-2.13/wasm4s_2.13-${{ inputs.version }}.jar.sha256
+          shasum -a 256 ./target/scala-2.13/wasm4s-bundle_2.13-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-2.13/wasm4s-bundle_2.13-${{ inputs.version }}.jar.sha256
+          shasum -a 256 ./target/scala-2.12/wasm4s_2.12-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-2.12/wasm4s_2.12-${{ inputs.version }}.jar.sha256
+          shasum -a 256 ./target/scala-2.12/wasm4s-bundle_2.12-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-2.12/wasm4s-bundle_2.12-${{ inputs.version }}.jar.sha256
+      - name: Release binary and SHA-256 checksum to GitHub
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.version }}
+          files: |
+            ./target/scala-2.13/wasm4s_2.13-${{ inputs.version }}.jar
+            ./target/scala-2.13/wasm4s-bundle_2.13-${{ inputs.version }}.jar
+            ./target/scala-2.13/wasm4s_2.13-${{ inputs.version }}.jar.sha256
+            ./target/scala-2.13/wasm4s-bundle_2.13-${{ inputs.version }}.jar.sha256
+            ./target/scala-2.12/wasm4s_2.12-${{ inputs.version }}.jar
+            ./target/scala-2.12/wasm4s-bundle_2.12-${{ inputs.version }}.jar
+            ./target/scala-2.12/wasm4s_2.12-${{ inputs.version }}.jar.sha256
+            ./target/scala-2.12/wasm4s-bundle_2.12-${{ inputs.version }}.jar.sha256
