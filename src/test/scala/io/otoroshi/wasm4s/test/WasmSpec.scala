@@ -13,6 +13,7 @@ class WasmSpec extends munit.FunSuite {
     "basic" -> BasicWasmConfiguration.fromWasiSource(WasmSource(WasmSourceKind.File, "./src/test/resources/basic.wasm")),
     "opa" -> BasicWasmConfiguration.fromOpaSource(WasmSource(WasmSourceKind.File, "./src/test/resources/opa.wasm")),
   )
+  
   val wasmIntegration = WasmIntegration(BasicWasmIntegrationContextWithNoHttpClient("test-wasm4s", wasmStore))
   wasmIntegration.runVmLoaderJob()
 
