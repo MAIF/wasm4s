@@ -16,8 +16,8 @@ jobs:
         with:
           java-version: 11
       - uses: coursier/cache-action@v5
-      - name: build libs
-        id: build libs
+      - name: build-libs
+        id: build-libs
         run: |
           sh ./update-extism.sh
           sbt ';+compile;+test;+package;+assembly'
