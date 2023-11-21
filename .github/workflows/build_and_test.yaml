@@ -23,4 +23,5 @@ jobs:
     - name: run-tests
       id: run-tests
       run: |
+        sh ./update-extism.sh
         sbt ';compile;test'
