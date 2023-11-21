@@ -77,7 +77,7 @@ lazy val root = (project in file("."))
 
 assembly / artifact := {
   val art = (assembly / artifact).value
-  art.withClassifier(Some("assembly"))
+  art.withClassifier(Some("bundle"))
 }
 
 addArtifact(assembly / artifact, assembly)
