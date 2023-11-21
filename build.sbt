@@ -1,18 +1,20 @@
 import Dependencies.munit
+import xerial.sbt.Sonatype._
 
 lazy val scala212 = "2.12.16"
 lazy val scala213 = "2.13.11"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
 ThisBuild / scalaVersion     := scala212
-ThisBuild / organization     := "io.otoroshi"
-ThisBuild / organizationName := "wasm4s"
+ThisBuild / organization     := "fr.maif"
 
 inThisBuild(
   List(
     description := "Library to run wasm vm in a scala app",
     startYear := Some(2023),
-    organization := "io.otoroshi",
+    organization := "fr.maif",
+    sonatypeProfileName := "fr.maif",
+    publishMavenStyle := true,
     homepage := Some(url("https://github.com/MAIF/wasm4s")),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     scmInfo := Some(
@@ -21,7 +23,6 @@ inThisBuild(
         "scm:git@github.com:MAIF/wasm4s.git"
       )
     ),
-    publishMavenStyle := true,
     developers := List(
       Developer(
         "mathieuancelin",
@@ -57,9 +58,9 @@ lazy val root = (project in file("."))
   .settings(
     name := "wasm4s",
     crossScalaVersions := supportedScalaVersions,
-    githubOwner := "MAIF",
-    githubRepository := "wasm4s",
-    githubTokenSource := TokenSource.Environment("GITHUB_TOKEN"),
+    //githubOwner := "MAIF",
+    //githubRepository := "wasm4s",
+    //githubTokenSource := TokenSource.Environment("GITHUB_TOKEN"),
     libraryDependencies ++= Seq(
       munit % Test,
       "com.typesafe.play"     %% "play-ws"        % playWsVersion % "provided",
@@ -75,12 +76,17 @@ lazy val root = (project in file("."))
     ),
   )
 
+usePgpKeyHex("4EFDC6FC2DEC936B13B7478C2F8C0F4E1D397E7F")
+sonatypeProjectHosting := Some(GitHubHosting("MAIF", "wasm4s", "mathieu.ancelin@serli.com"))
+sonatypeRepository := "https://s01.oss.sonatype.org/service/local"
+publishTo := sonatypePublishToBundle.value
+sonatypeCredentialHost := "s01.oss.sonatype.org"
+
 assembly / artifact := {
   val art = (assembly / artifact).value
   art.withClassifier(Some("bundle"))
 }
 
 addArtifact(assembly / artifact, assembly)
-
 assembly / test := {}
 assembly / assemblyJarName := s"wasm4s-bundle_${scalaVersion.value.split("\\.").init.mkString(".")}-${version.value}.jar"

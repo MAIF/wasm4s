@@ -25,7 +25,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           sh ./update-extism.sh
-          sbt ';+compile;+test;+package;+assembly;+publish'
+          # sbt ';+compile;+test;+package;+assembly;+doc;+packageDoc;+publishSigned;sonatypeBundleRelease'
+          # sbt ';+compile;+test;+package;+assembly;+publish'
+          sbt ';+compile;+test;+package;+assembly'
       - name: Generate SHA-256
         run: |
           shasum -a 256 ./target/scala-2.13/wasm4s_2.13-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-2.13/wasm4s_2.13-${{ inputs.version }}.jar.sha256
