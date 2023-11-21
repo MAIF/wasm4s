@@ -59,7 +59,7 @@ lazy val root = (project in file("."))
     crossScalaVersions := supportedScalaVersions,
     githubOwner := "MAIF",
     githubRepository := "wasm4s",
-    githubTokenSource := TokenSource.Environment("GITHUB_PACKAGES_TOKEN"),
+    githubTokenSource := TokenSource.Environment("GITHUB_TOKEN"),
     libraryDependencies ++= Seq(
       munit % Test,
       "com.typesafe.play"     %% "play-ws"        % playWsVersion % "provided",
