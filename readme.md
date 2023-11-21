@@ -4,7 +4,13 @@ this library provides a runtime to execute wasm function in a pooled vm paradigm
 
 ## how to use it
 
-first you need to have a class that implements the `WasmConfiguration` trait. This type represent a wasm vm you want to run. Objects that implements 
+first declare the dependency to wasm4s in your `build.sbt`
+
+```scala
+libraryDependencies += "fr.maif" %% "wasm4s" % "1.0.0" classifier "bundle"
+```
+
+then you need to have a class that implements the `WasmConfiguration` trait. This type represent a wasm vm you want to run. Objects that implements 
 can be stored anywhere you want. This library provides a `BasicWasmConfiguration` implementation, but you can build your own. 
 
 then create an integration context class that will provide access to everything needed
