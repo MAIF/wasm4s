@@ -6,7 +6,7 @@
 
 A library to easily run WASM vms from inside your scala project. The wasm vms can be pooled and can auto update themselves when needed. The wasm source can be a file, a base64 payload, an http response, and a [wasmo](https://github.com/maif/wasmo) plugin.
 
-## how to use it
+# dependency
 
 first declare the dependency to wasm4s in your `build.sbt`
 
@@ -14,10 +14,13 @@ first declare the dependency to wasm4s in your `build.sbt`
 libraryDependencies += "fr.maif" %% "wasm4s" % "1.0.0" classifier "bundle"
 ```
 
-then you need to have a class that implements the `WasmConfiguration` trait. This type represent a wasm vm you want to run. Objects that implements 
-can be stored anywhere you want. This library provides a `BasicWasmConfiguration` implementation, but you can build your own. 
+the dependency is quite big as it embed multiarch build of wasmtime and extism.
 
-then create an integration context class that will provide access to everything needed
+## how to use it in you project
+
+Wasm4s is supposed to be used in an environment where you are going to store and retrieve configurations of wasm vms with callable functions. Wasm4s provides a trait called  `WasmConfiguration` that you can extend to represent those vm configuration. You need to extend the `WasmConfiguration` trait with your own implementation in order to interact with wasm4s. Wasm4s provides a `BasicWasmConfiguration` implementation, but you can build your own. It doesn't matter if those configuration are just objects in memory or something that is stored durably in a datastore. Wasm4s provides an `InMemoryWasmConfigurationStore` type to store your configuration in memory.
+
+Once you have types that extends `WasmConfiguration`, you'll need to create an integration context class that will provide access to the whole infrastructure needed by wasm4s
 
 for instance, here is the otoroshi integration :
 
@@ -85,6 +88,8 @@ class FooWasmIntegrationContext(env: Env) extends WasmIntegrationContext {
   override def hostFunctions(config: WasmConfiguration, pluginId: String): Array[WasmOtoroshiHostFunction[_ <: WasmOtoroshiHostUserData]] = Array.empty
 }
 ```
+
+you can also use `DefaultWasmIntegrationContext` and `DefaultWasmIntegrationContextWithNoHttpClient` types that provides default settings for your `WasmIntegrationContext`.
 
 then instanciate a wasm integration 
 
