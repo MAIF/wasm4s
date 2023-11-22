@@ -61,7 +61,7 @@ class BasicWasmIntegrationContextWithNoHttpClient[A <: WasmConfiguration](name: 
     Executors.newWorkStealingPool(Math.max(32, (Runtime.getRuntime.availableProcessors * 4) + 1))
   )
 
-  override def url(path: String, tlsConfigOpt: Option[TlsConfig] = None): WSRequest = ???
+  override def url(path: String, tlsConfigOpt: Option[TlsConfig] = None): WSRequest = throw new RuntimeException("BasicWasmIntegrationContextWithNoHttpClient does not provide an httpclient implementation")
 
   override def wasmConfigSync(path: String): Option[WasmConfiguration] = store.wasmConfiguration(path)
   override def wasmConfigs(): Future[Seq[WasmConfiguration]] = store.wasmConfigurations().vfuture
@@ -197,4 +197,43 @@ class WasmIntegration(ic: WasmIntegrationContext) {
     }
     ().vfuture
   }
+}
+
+abstract class DefaultWasmIntegrationContext[A <: WasmConfiguration](
+  val name: String, 
+  val wasmCacheTtl: Long = 30000, 
+  val wasmQueueBufferSize: Int = 100,
+  val maxWorkers: Int = Math.max(32, (Runtime.getRuntime.availableProcessors * 4) + 1),
+  val selfRefreshingPools: Boolean = false,
+  val wasmoSettings: Option[WasmManagerSettings] = None,
+) extends WasmIntegrationContext {
+  val system = ActorSystem(name)
+  val materializer: Materializer = Materializer(system)
+  val executionContext: ExecutionContext = system.dispatcher
+  val logger: Logger = Logger(name)
+  val wasmManagerSettings: Future[Option[WasmManagerSettings]] = Future.successful(wasmoSettings)
+  val wasmScriptCache: TrieMap[String, CacheableWasmScript] = new TrieMap[String, CacheableWasmScript]()
+  val wasmExecutor: ExecutionContext = ExecutionContext.fromExecutorService(
+    Executors.newWorkStealingPool(maxWorkers)
+  )
+}
+
+abstract class DefaultWasmIntegrationContextWithNoHttpClient[A <: WasmConfiguration](
+  val name: String, 
+  val wasmCacheTtl: Long = 30000, 
+  val wasmQueueBufferSize: Int = 100,
+  val maxWorkers: Int = Math.max(32, (Runtime.getRuntime.availableProcessors * 4) + 1),
+  val selfRefreshingPools: Boolean = false,
+  val wasmoSettings: Option[WasmManagerSettings] = None,
+) extends WasmIntegrationContext {
+  val system = ActorSystem(name)
+  val materializer: Materializer = Materializer(system)
+  val executionContext: ExecutionContext = system.dispatcher
+  val logger: Logger = Logger(name)
+  val wasmManagerSettings: Future[Option[WasmManagerSettings]] = Future.successful(wasmoSettings)
+  val wasmScriptCache: TrieMap[String, CacheableWasmScript] = new TrieMap[String, CacheableWasmScript]()
+  val wasmExecutor: ExecutionContext = ExecutionContext.fromExecutorService(
+    Executors.newWorkStealingPool(maxWorkers)
+  )
+  override def url(path: String, tlsConfigOpt: Option[TlsConfig] = None): WSRequest = throw new RuntimeException("DefaultWasmIntegrationContextWithNoHttpClient does not provide an httpclient implementation")
 }
