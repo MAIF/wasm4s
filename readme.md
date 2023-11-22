@@ -4,7 +4,7 @@
 
 # wasm4s
 
-this library provides a runtime to execute wasm function in a pooled vm paradigm
+A library to easily run WASM vms from inside your scala project. The wasm vms can be pooled and can auto update themselves when needed. The wasm source can be a file, a base64 payload, an http response, and a [wasmo](https://github.com/maif/wasmo) plugin.
 
 ## how to use it
 
