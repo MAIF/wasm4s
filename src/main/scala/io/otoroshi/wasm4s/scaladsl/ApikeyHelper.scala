@@ -5,8 +5,6 @@ import java.util.Base64
 
 object ApikeyHelper {
   def generate(settings: WasmoSettings): String = {
-    Base64.getEncoder.encodeToString(
-      s"Basic ${settings.clientId}:${settings.clientSecret}".getBytes(StandardCharsets.UTF_8)
-    )
+    "Basic " + Base64.getEncoder.encodeToString(s"${settings.clientId}:${settings.clientSecret}".getBytes(StandardCharsets.UTF_8))
   }
 }
