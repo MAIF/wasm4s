@@ -32,7 +32,7 @@ trait WasmIntegrationContext {
 
   def url(path: String, tlsConfigOpt: Option[TlsConfig] = None): WSRequest
 
-  def wasmManagerSettings: Future[Option[WasmManagerSettings]]
+  def wasmoSettings: Future[Option[WasmoSettings]]
   def wasmConfigSync(path: String): Option[WasmConfiguration] = None
   def wasmConfig(path: String): Future[Option[WasmConfiguration]] = wasmConfigSync(path).vfuture
   def wasmConfigs(): Future[Seq[WasmConfiguration]]
@@ -55,7 +55,7 @@ class BasicWasmIntegrationContextWithNoHttpClient[A <: WasmConfiguration](name: 
   val wasmCacheTtl: Long = 2000
   val wasmQueueBufferSize: Int = 100
   val selfRefreshingPools: Boolean = false
-  val wasmManagerSettings: Future[Option[WasmManagerSettings]] = Future.successful(None)
+  val wasmoSettings: Future[Option[WasmoSettings]] = Future.successful(None)
   val wasmScriptCache: TrieMap[String, CacheableWasmScript] = new TrieMap[String, CacheableWasmScript]()
   val wasmExecutor: ExecutionContext = ExecutionContext.fromExecutorService(
     Executors.newWorkStealingPool(Math.max(32, (Runtime.getRuntime.availableProcessors * 4) + 1))
@@ -200,18 +200,18 @@ class WasmIntegration(ic: WasmIntegrationContext) {
 }
 
 abstract class DefaultWasmIntegrationContext[A <: WasmConfiguration](
-  val name: String, 
-  val wasmCacheTtl: Long = 30000, 
-  val wasmQueueBufferSize: Int = 100,
-  val maxWorkers: Int = Math.max(32, (Runtime.getRuntime.availableProcessors * 4) + 1),
-  val selfRefreshingPools: Boolean = false,
-  val wasmoSettings: Option[WasmManagerSettings] = None,
+                                                                      val name: String,
+                                                                      val wasmCacheTtl: Long = 30000,
+                                                                      val wasmQueueBufferSize: Int = 100,
+                                                                      val maxWorkers: Int = Math.max(32, (Runtime.getRuntime.availableProcessors * 4) + 1),
+                                                                      val selfRefreshingPools: Boolean = false,
+                                                                      val wasmoConfig: Option[WasmoSettings] = None,
 ) extends WasmIntegrationContext {
   val system = ActorSystem(name)
   val materializer: Materializer = Materializer(system)
   val executionContext: ExecutionContext = system.dispatcher
   val logger: Logger = Logger(name)
-  val wasmManagerSettings: Future[Option[WasmManagerSettings]] = Future.successful(wasmoSettings)
+  val wasmoSettings: Future[Option[WasmoSettings]] = Future.successful(wasmoConfig)
   val wasmScriptCache: TrieMap[String, CacheableWasmScript] = new TrieMap[String, CacheableWasmScript]()
   val wasmExecutor: ExecutionContext = ExecutionContext.fromExecutorService(
     Executors.newWorkStealingPool(maxWorkers)
@@ -219,18 +219,18 @@ abstract class DefaultWasmIntegrationContext[A <: WasmConfiguration](
 }
 
 abstract class DefaultWasmIntegrationContextWithNoHttpClient[A <: WasmConfiguration](
-  val name: String, 
-  val wasmCacheTtl: Long = 30000, 
-  val wasmQueueBufferSize: Int = 100,
-  val maxWorkers: Int = Math.max(32, (Runtime.getRuntime.availableProcessors * 4) + 1),
-  val selfRefreshingPools: Boolean = false,
-  val wasmoSettings: Option[WasmManagerSettings] = None,
+                                                                                      val name: String,
+                                                                                      val wasmCacheTtl: Long = 30000,
+                                                                                      val wasmQueueBufferSize: Int = 100,
+                                                                                      val maxWorkers: Int = Math.max(32, (Runtime.getRuntime.availableProcessors * 4) + 1),
+                                                                                      val selfRefreshingPools: Boolean = false,
+                                                                                      val wasmoConfig: Option[WasmoSettings] = None,
 ) extends WasmIntegrationContext {
   val system = ActorSystem(name)
   val materializer: Materializer = Materializer(system)
   val executionContext: ExecutionContext = system.dispatcher
   val logger: Logger = Logger(name)
-  val wasmManagerSettings: Future[Option[WasmManagerSettings]] = Future.successful(wasmoSettings)
+  val wasmoSettings: Future[Option[WasmoSettings]] = Future.successful(wasmoConfig)
   val wasmScriptCache: TrieMap[String, CacheableWasmScript] = new TrieMap[String, CacheableWasmScript]()
   val wasmExecutor: ExecutionContext = ExecutionContext.fromExecutorService(
     Executors.newWorkStealingPool(maxWorkers)

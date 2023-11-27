@@ -218,10 +218,9 @@ object WasmSourceKind {
         ic: WasmIntegrationContext,
         ec: ExecutionContext
     ): Future[Either[JsValue, ByteString]] = {
-      ic.wasmManagerSettings.flatMap {
-        case Some(settings @ WasmManagerSettings(url, clientId, clientSecret, kind, tokenSecret)) => {
-          val apikey = ApikeyHelper
-            .generate(settings)
+      ic.wasmoSettings.flatMap {
+        case Some(settings @ WasmoSettings(url, clientId, clientSecret, kind)) => {
+          val apikey = ApikeyHelper.generate(settings)
           val wasmoUrl = s"$url/wasm/$path"
           val followRedirect = opts.select("follow_redirect").asOpt[Boolean].getOrElse(true)
           val timeout = opts.select("timeout").asOpt[Long].map(_.millis).getOrElse(5.seconds)
@@ -231,7 +230,7 @@ object WasmSourceKind {
             .withRequestTimeout(timeout)
             .withHttpHeaders(
               "Accept"     -> "application/json",
-              "Otoroshi-User"       -> apikey,
+              "Authorization"       -> apikey,
               "kind"                -> kind.getOrElse("*")
             )
             .get()
