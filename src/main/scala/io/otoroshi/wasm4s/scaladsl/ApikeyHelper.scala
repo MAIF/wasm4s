@@ -1,10 +1,10 @@
 package io.otoroshi.wasm4s.scaladsl
 
-import java.nio.charset.StandardCharsets
-import java.util.Base64
+import io.otoroshi.wasm4s.scaladsl.implicits._
 
 object ApikeyHelper {
   def generate(settings: WasmoSettings): String = {
-    "Basic " + Base64.getEncoder.encodeToString(s"${settings.clientId}:${settings.clientSecret}".getBytes(StandardCharsets.UTF_8))
+    val token = s"${settings.clientId}:${settings.clientSecret}".base64
+    s"Basic $token"
   }
 }
