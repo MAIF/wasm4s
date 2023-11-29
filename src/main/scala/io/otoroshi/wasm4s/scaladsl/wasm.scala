@@ -212,15 +212,15 @@ object WasmSourceKind {
         }
     }
   }
-  case object WasmManager extends WasmSourceKind {
-    def name: String = "WasmManager"
+  case object Wasmo extends WasmSourceKind {
+    def name: String = "Wasmo"
     def getWasm(path: String, opts: JsValue)(implicit
         ic: WasmIntegrationContext,
         ec: ExecutionContext
     ): Future[Either[JsValue, ByteString]] = {
       ic.wasmoSettings.flatMap {
-        case Some(settings @ WasmoSettings(url, clientId, clientSecret, kind)) => {
-          val apikey = ApikeyHelper.generate(settings)
+        case Some(settings @ WasmoSettings(url, _, _, kind, _)) => {
+          val (apikeyHeader, apikey) = ApikeyHelper.generate(settings)
           val wasmoUrl = s"$url/wasm/$path"
           val followRedirect = opts.select("follow_redirect").asOpt[Boolean].getOrElse(true)
           val timeout = opts.select("timeout").asOpt[Long].map(_.millis).getOrElse(5.seconds)
@@ -230,7 +230,7 @@ object WasmSourceKind {
             .withRequestTimeout(timeout)
             .withHttpHeaders(
               "Accept"     -> "application/json",
-              "Authorization"       -> apikey,
+              apikeyHeader          -> apikey,
               "kind"                -> kind.getOrElse("*")
             )
             .get()
@@ -293,8 +293,8 @@ object WasmSourceKind {
   def apply(value: String): WasmSourceKind = value.toLowerCase match {
     case "base64"      => Base64
     case "http"        => Http
-    case "wasmmanager" => WasmManager
-    case "wasmo"       => WasmManager
+    case "wasmmanager" => Wasmo
+    case "wasmo"       => Wasmo
     case "local"       => Local
     case "file"        => File
     case _             => Unknown

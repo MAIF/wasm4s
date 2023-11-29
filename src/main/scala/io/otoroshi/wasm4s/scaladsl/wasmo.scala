@@ -10,6 +10,7 @@ case class WasmoSettings(
   clientId: String = "admin-api-apikey-id",
   clientSecret: String = "admin-api-apikey-secret",
   pluginsFilter: Option[String] = Some("*"),
+  legacyAuth: Boolean = false,
 ) {
   def json: JsValue = WasmoSettings.format.writes(this)
 }
@@ -21,6 +22,7 @@ object WasmoSettings {
         "url"           -> o.url,
         "clientId"      -> o.clientId,
         "clientSecret"  -> o.clientSecret,
+        "legacyAuth"  -> o.legacyAuth,
         "pluginsFilter" -> o.pluginsFilter.map(JsString).getOrElse(JsNull).as[JsValue],
       )
 
@@ -30,6 +32,7 @@ object WasmoSettings {
           url = (json \ "url").asOpt[String].getOrElse("http://localhost:5001"),
           clientId = (json \ "clientId").asOpt[String].getOrElse("admin-api-apikey-id"),
           clientSecret = (json \ "clientSecret").asOpt[String].getOrElse("admin-api-apikey-secret"),
+          legacyAuth = (json \ "legacyAuth").asOpt[Boolean].getOrElse(false),
           pluginsFilter = (json \ "pluginsFilter").asOpt[String].getOrElse("*").some,
         )
       } match {
