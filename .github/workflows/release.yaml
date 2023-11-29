@@ -28,6 +28,10 @@ jobs:
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
         run: |
+          mkdir -p ~/.sbt/gpg
+          echo "${{secrets.PGP_SECRET}}" | base64 --decode > ~/.sbt/gpg/secring.key
+          gpg --batch --pinentry-mode=loopback --yes --passphrase ${{ secrets.PGP_PASSPHRASE }} --import ~/.sbt/pgp/secring.key
+          gpg --batch --pinentry-mode=loopback --yes --passphrase ${{ secrets.PGP_PASSPHRASE }} --export-secret-key 4EFDC6FC2DEC936B13B7478C2F8C0F4E1D397E7F > ~/.sbt/pgp/secring.gpg
           sh ./update-extism.sh
           sbt ';+compile;+test;+package;+assembly;+doc;+packageDoc;+publishSigned;sonatypeBundleRelease'
           # sbt ';+compile;+test;+package;+assembly;+publish'
