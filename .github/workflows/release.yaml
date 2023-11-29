@@ -30,8 +30,8 @@ jobs:
         run: |
           mkdir -p ~/.sbt/gpg
           echo "$PGP_SECRET" | base64 --decode > ~/.sbt/gpg/secring.key
-          gpg --batch --pinentry-mode=loopback --yes --passphrase "$PGP_PASSPHRASE" --import ~/.sbt/pgp/secring.key
-          gpg --batch --pinentry-mode=loopback --yes --passphrase "$PGP_PASSPHRASE" --export-secret-key 4EFDC6FC2DEC936B13B7478C2F8C0F4E1D397E7F > ~/.sbt/pgp/secring.gpg
+          gpg --batch --pinentry-mode=loopback --yes --passphrase "$PGP_PASSPHRASE" --import ~/.sbt/gpg/secring.key
+          gpg --batch --pinentry-mode=loopback --yes --passphrase "$PGP_PASSPHRASE" --export-secret-key 4EFDC6FC2DEC936B13B7478C2F8C0F4E1D397E7F > ~/.sbt/gpg/secring.gpg
           sh ./update-extism.sh
           sbt ';+compile;+test;+package;+assembly;+doc;+packageDoc;+publishSigned;sonatypeBundleRelease'
           # sbt ';+compile;+test;+package;+assembly;+publish'
