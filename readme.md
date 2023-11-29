@@ -11,7 +11,7 @@ A library to easily run WASM vms from inside your scala project. The wasm vms ca
 first declare the dependency to wasm4s in your `build.sbt`
 
 ```scala
-libraryDependencies += "fr.maif" %% "wasm4s" % "1.0.0" classifier "bundle"
+libraryDependencies += "fr.maif" %% "wasm4s" % "2.0.0" classifier "bundle"
 ```
 
 the dependency is quite big as it embed multiarch build of wasmtime and extism.
