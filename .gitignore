@@ -5,4 +5,5 @@
 .vscode
 darwin-**
 linux-**
+windows-**
 target
