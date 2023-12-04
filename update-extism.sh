@@ -8,7 +8,7 @@ echo "latest extism version is: ${EXTISM_VERSION}"
 rm -rfv ./src/main/resources/native
 rm -rfv ./src/main/resources/darwin-*
 rm -rfv ./src/main/resources/linux-*
-rm -rfv ./src/main/resources/windows-*
+rm -rfv ./src/main/resources/win*
 
 mkdir ./src/main/resources/native
 
@@ -27,7 +27,7 @@ mkdir ./src/main/resources/darwin-aarch64
 mkdir ./src/main/resources/darwin-x86-64
 mkdir ./src/main/resources/linux-aarch64
 mkdir ./src/main/resources/linux-x86-64
-mkdir ./src/main/resources/windows-x86-64
+mkdir ./src/main/resources/win32-x86
 
 tar -xvf "./src/main/resources/native/libextism-aarch64-apple-darwin-${EXTISM_VERSION}.tar.gz" --directory ./src/main/resources/native/
 mv ./src/main/resources/native/libextism.dylib ./src/main/resources/darwin-aarch64/libextism.dylib
@@ -41,7 +41,7 @@ mv ./src/main/resources/native/libextism.so ./src/main/resources/linux-x86-64/li
 
 # tar -xvf "./src/main/resources/native/libextism-x86_64-pc-windows-gnu-${EXTISM_VERSION}.tar.gz" --directory ./src/main/resources/native/
 tar -xvf "./src/main/resources/native/libextism-x86_64-pc-windows-msvc-${EXTISM_VERSION}.tar.gz" --directory ./src/main/resources/native/
-mv ./src/main/resources/native/extism.dll ./src/main/resources/windows-x86-64/extism.dll
+mv ./src/main/resources/native/extism.dll ./src/main/resources/win32-x86/extism.dll
 
 rm -rfv ./src/main/resources/native
 
