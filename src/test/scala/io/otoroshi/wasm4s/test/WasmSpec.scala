@@ -14,7 +14,9 @@ class WasmSpec extends munit.FunSuite {
     "opa" -> BasicWasmConfiguration.fromOpaSource(WasmSource(WasmSourceKind.File, "./src/test/resources/opa.wasm")),
   )
   
-  val wasmIntegration = WasmIntegration(BasicWasmIntegrationContextWithNoHttpClient("test-wasm4s", wasmStore))
+  implicit val intctx = BasicWasmIntegrationContextWithNoHttpClient("test-wasm4s", wasmStore)
+  val wasmIntegration = WasmIntegration(intctx)
+
   wasmIntegration.runVmLoaderJob()
 
   test("basic setup with manual release should work") {
@@ -98,5 +100,23 @@ class WasmSpec extends munit.FunSuite {
     }
 
     Await.result(fu, 10.seconds)
+  }
+
+  test("check if an aquired vm is acquired") {
+
+    import wasmIntegration.executionContext
+
+    val callCtx = Json.obj("request" -> Json.obj("headers" -> Json.obj("foo" -> "bar"))).stringify
+
+    val pool = wasmStore.wasmConfigurationUnsafe("basic").pool(100000)
+
+    val vm =  Await.result(pool.getPooledVm(), 10.seconds).asInstanceOf[io.otoroshi.wasm4s.impl.WasmVmImpl]
+
+    assertEquals(vm.isAquired(), true)
+
+    vm.release()
+
+    assertEquals(vm.isAquired(), false)
+    
   }
 }

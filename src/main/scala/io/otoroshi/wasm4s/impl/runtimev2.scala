@@ -126,6 +126,10 @@ case class WasmVmImpl(
     instance.close()
   }
 
+  def isAquired(): Boolean = {
+    pool.inUseVms.contains(this)
+  }
+
   def isBusy(): Boolean = {
     inFlight.get() > 0
   }

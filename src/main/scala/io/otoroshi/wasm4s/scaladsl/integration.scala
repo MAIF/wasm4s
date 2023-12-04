@@ -172,10 +172,12 @@ class WasmIntegration(ic: WasmIntegrationContext) {
         val options = pool.wasmConfig().map(_.killOptions)
         if (!options.exists(_.immortal)) {
           val maxDur = options.map(_.maxUnusedDuration).getOrElse(globalNotUsedDuration)
-          val unusedVms = pool.availableVms.asScala.filter(_.hasNotBeenUsedInTheLast(maxDur))
-          val tooMuchMemoryVms = (pool.availableVms.asScala ++ pool.inUseVms.asScala)
+          val availableVms = pool.availableVms.asScala.toSeq.filter(_.isAquired())
+          val inUseVms = pool.availabinUseVmsleVms.asScala.toSeq
+          val unusedVms = availableVms.filter(_.hasNotBeenUsedInTheLast(maxDur))
+          val tooMuchMemoryVms = (availableVms ++ inUseVms)
             .filter(_.consumesMoreThanMemoryPercent(options.map(_.maxMemoryUsage).getOrElse(0.9)))
-          val tooSlowVms = (pool.availableVms.asScala ++ pool.inUseVms.asScala)
+          val tooSlowVms = (availableVms ++ inUseVms)
             .filter(_.tooSlow(options.map(_.maxAvgCallDuration.toNanos).getOrElse(1.day.toNanos)))
           val allVms = unusedVms ++ tooMuchMemoryVms ++ tooSlowVms
           if (allVms.nonEmpty) {
@@ -185,7 +187,7 @@ class WasmIntegration(ic: WasmIntegrationContext) {
             if (tooSlowVms.nonEmpty) ic.logger.warn(s" - ${tooSlowVms.size} because of avg call duration too long")
           }
           allVms.foreach { vm =>
-            if (vm.isBusy()) {
+            if (vm.isBusy() || vm.isAquired()) {
               vm.destroyAtRelease()
             } else {
               vm.ignore()
