@@ -18,8 +18,8 @@ curl -L -o "./src/main/resources/native/libextism-x86_64-apple-darwin-${EXTISM_V
 curl -L -o "./src/main/resources/native/libextism-x86_64-unknown-linux-gnu-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-x86_64-unknown-linux-gnu-${EXTISM_VERSION}.tar.gz"
 curl -L -o "./src/main/resources/native/libextism-aarch64-unknown-linux-gnu-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-aarch64-unknown-linux-gnu-${EXTISM_VERSION}.tar.gz"
 
-curl -L -o "./src/main/resources/native/libextism-x86_64-pc-windows-gnu-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-x86_64-pc-windows-gnu-${EXTISM_VERSION}.tar.gz"
-# curl -L -o "./src/main/resources/native/libextism-x86_64-pc-windows-msvc-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-x86_64-pc-windows-msvc-${EXTISM_VERSION}.tar.gz"
+# curl -L -o "./src/main/resources/native/libextism-x86_64-pc-windows-gnu-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-x86_64-pc-windows-gnu-${EXTISM_VERSION}.tar.gz"
+curl -L -o "./src/main/resources/native/libextism-x86_64-pc-windows-msvc-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-x86_64-pc-windows-msvc-${EXTISM_VERSION}.tar.gz"
 
 curl -L -o "./lib/extism-${EXTISM_VERSION}.jar" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/extism-0.4.0.jar"
 
@@ -39,8 +39,8 @@ mv ./src/main/resources/native/libextism.so ./src/main/resources/linux-aarch64/l
 tar -xvf "./src/main/resources/native/libextism-x86_64-unknown-linux-gnu-${EXTISM_VERSION}.tar.gz" --directory ./src/main/resources/native/
 mv ./src/main/resources/native/libextism.so ./src/main/resources/linux-x86-64/libextism.so
 
-tar -xvf "./src/main/resources/native/libextism-x86_64-pc-windows-gnu-${EXTISM_VERSION}.tar.gz" --directory ./src/main/resources/native/
-# tar -xvf "./src/main/resources/native/libextism-x86_64-pc-windows-msvc-${EXTISM_VERSION}.tar.gz" --directory ./src/main/resources/native/
+# tar -xvf "./src/main/resources/native/libextism-x86_64-pc-windows-gnu-${EXTISM_VERSION}.tar.gz" --directory ./src/main/resources/native/
+tar -xvf "./src/main/resources/native/libextism-x86_64-pc-windows-msvc-${EXTISM_VERSION}.tar.gz" --directory ./src/main/resources/native/
 mv ./src/main/resources/native/extism.dll ./src/main/resources/win32-x86-64/extism.dll
 
 rm -rfv ./src/main/resources/native
