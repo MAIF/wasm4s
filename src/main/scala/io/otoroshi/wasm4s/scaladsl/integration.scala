@@ -173,7 +173,7 @@ class WasmIntegration(ic: WasmIntegrationContext) {
         if (!options.exists(_.immortal)) {
           val maxDur = options.map(_.maxUnusedDuration).getOrElse(globalNotUsedDuration)
           val availableVms = pool.availableVms.asScala.toSeq.filter(_.isAquired())
-          val inUseVms = pool.availabinUseVmsleVms.asScala.toSeq
+          val inUseVms = pool.inUseVms.asScala.toSeq
           val unusedVms = availableVms.filter(_.hasNotBeenUsedInTheLast(maxDur))
           val tooMuchMemoryVms = (availableVms ++ inUseVms)
             .filter(_.consumesMoreThanMemoryPercent(options.map(_.maxMemoryUsage).getOrElse(0.9)))
