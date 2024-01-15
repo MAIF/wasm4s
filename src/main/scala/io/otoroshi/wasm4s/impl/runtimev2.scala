@@ -8,6 +8,7 @@ import io.otoroshi.wasm4s.scaladsl._
 import io.otoroshi.wasm4s.scaladsl.opa._
 import io.otoroshi.wasm4s.scaladsl.implicits._
 import io.otoroshi.wasm4s.impl.WasmVmPoolImpl.logger
+import org.extism.sdk.{HostFunction, HostUserData, Plugin}
 import org.extism.sdk.manifest.{Manifest, MemoryOptions}
 import org.extism.sdk.wasm.WasmSourceResolver
 import org.extism.sdk.wasmotoroshi._
@@ -39,10 +40,10 @@ case class WasmVmImpl(
                        maxCalls: Int,
                        maxMemory: Long,
                        resetMemory: Boolean,
-                       instance: WasmOtoroshiInstance,
+                       instance: Plugin,
                        vmDataRef: AtomicReference[WasmVmData],
-                       memories: Array[WasmOtoroshiLinearMemory],
-                       functions: Array[WasmOtoroshiHostFunction[_ <: WasmOtoroshiHostUserData]],
+                       memories: Array[LinearMemory],
+                       functions: Array[HostFunction[_ <: HostUserData]],
                        pool: WasmVmPoolImpl,
                        var opaPointers: Option[OPAWasmVm] = None
 ) extends WasmVm {
@@ -95,7 +96,11 @@ case class WasmVmImpl(
             case t: Throwable => action.promise.tryFailure(t)
           } finally {
             if (resetMemory) {
-              instance.reset()
+              action.parameters match {
+                case _m: WasmFunctionParameters.ExtismFuntionCall => instance.reset()
+                case _m: WasmFunctionParameters.OPACall => // the memory data will already be overwritten during the next call
+                case _ => instance.resetCustomMemory()
+              }
             }
             pool.ic.logger.debug(s"functions: ${functions.size}")
             pool.ic.logger.debug(s"memories: ${memories.size}")
@@ -252,7 +257,6 @@ case class WasmVmPoolAction(promise: Promise[WasmVmImpl], options: WasmVmInitOpt
 object WasmVmPoolImpl {
 
   private[wasm4s] val logger = Logger("otoroshi-wasm-vm-pool")
-  private[wasm4s] val engine = new WasmOtoroshiEngine()
   private val instances    = new TrieMap[String, WasmVmPoolImpl]()
 
   def allInstances(): Map[String, WasmVmPoolImpl] = instances.synchronized {
@@ -275,9 +279,7 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
 
   WasmVmPoolImpl.logger.debug("new WasmVmPool")
 
-  private val engine               = new WasmOtoroshiEngine()
   private val counter              = new AtomicInteger(-1)
-  private val templateRef          = new AtomicReference[WasmOtoroshiTemplate](null)
   private[wasm4s] val availableVms   = new ConcurrentLinkedQueue[WasmVmImpl]()
   private[wasm4s] val inUseVms       = new ConcurrentLinkedQueue[WasmVmImpl]()
   private val lastCacheUpdateTime  = new AtomicLong(System.currentTimeMillis())
@@ -367,48 +369,34 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
     if (creatingRef.compareAndSet(false, true)) {
       val index                                                                     = counter.incrementAndGet()
       WasmVmPoolImpl.logger.debug(s"creating vm: ${index}")
-      if (templateRef.get() == null) {
-        if (!config.source.isCached()(ic)) {
-          // this part should never happen anymore, but just in case
-          WasmVmPoolImpl.logger.warn("fetching missing source")
-          Await.result(config.source.getWasm()(ic, ic.executionContext), 30.seconds)
-        }
-        lastPluginVersion.set(computeHash(config, config.source.cacheKey, ic.wasmScriptCache))
-        val cache    = ic.wasmScriptCache
-        val key      = config.source.cacheKey
-        val wasm     = cache(key) match {
-          case CacheableWasmScript.CachedWasmScript(script, _) => script
-          case CacheableWasmScript.FetchingCachedWasmScript(_, script) => script
-          case _ => throw new RuntimeException("unable to get wasm source from cache. this should not happen !")
-        }
-        val hash     = wasm.sha256
-        val resolver = new WasmSourceResolver()
-        val source   = resolver.resolve("wasm", wasm.toByteBuffer.array())
-        templateRef.set(
-          new WasmOtoroshiTemplate(
-            engine,
-            hash,
-            new Manifest(
-              Seq[org.extism.sdk.wasm.WasmSource](source).asJava,
-              new MemoryOptions(config.memoryPages),
-              config.config.asJava,
-              config.allowedHosts.asJava,
-              config.allowedPaths.asJava
-            )
-          )
-        )
+
+      if (!config.source.isCached()(ic)) {
+        // this part should never happen anymore, but just in case
+        WasmVmPoolImpl.logger.warn("fetching missing source")
+        Await.result(config.source.getWasm()(ic, ic.executionContext), 30.seconds)
       }
-      val template                                                                  = templateRef.get()
+      lastPluginVersion.set(computeHash(config, config.source.cacheKey, ic.wasmScriptCache))
+      val cache    = ic.wasmScriptCache
+      val key      = config.source.cacheKey
+      val wasm     = cache(key) match {
+        case CacheableWasmScript.CachedWasmScript(script, _) => script
+        case CacheableWasmScript.FetchingCachedWasmScript(_, script) => script
+        case _ => throw new RuntimeException("unable to get wasm source from cache. this should not happen !")
+      }
+//        val hash     = wasm.sha256
+      val resolver = new WasmSourceResolver()
+      val source   = resolver.resolve("wasm", wasm.toByteBuffer.array())
+
       val vmDataRef                                                                 = new AtomicReference[WasmVmData](null)
       val addedFunctions                                                            = options.addHostFunctions(vmDataRef)
-      val functions: Array[WasmOtoroshiHostFunction[_ <: WasmOtoroshiHostUserData]] = {
-        val fs: Array[WasmOtoroshiHostFunction[_ <: WasmOtoroshiHostUserData]] = if (options.importDefaultHostFunctions) {
+      val functions: Array[HostFunction[_ <: HostUserData]] = {
+        val fs: Array[HostFunction[_ <: HostUserData]] = if (options.importDefaultHostFunctions) {
           ic.hostFunctions(config, stableId) ++ addedFunctions
         } else {
-          addedFunctions.toArray[WasmOtoroshiHostFunction[_ <: WasmOtoroshiHostUserData]]
+          addedFunctions.toArray[HostFunction[_ <: HostUserData]]
         }
         if (config.opa) {
-          val opaFunctions: Seq[WasmOtoroshiHostFunction[_ <: WasmOtoroshiHostUserData]] = OPA.getFunctions(config).collect {
+          val opaFunctions: Seq[HostFunction[_ <: HostUserData]] = OPA.getFunctions(config).collect {
             case func if func.authorized(config) => func.function
           }
           fs ++ opaFunctions
@@ -417,7 +405,19 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
         }
       }
       val memories                                                                  = LinearMemories.getMemories(config)
-      val instance                                                                  = template.instantiate(engine, functions, memories, config.wasi)
+      val instance = new Plugin(
+        new Manifest(
+          Seq[org.extism.sdk.wasm.WasmSource](source).asJava,
+          new MemoryOptions(config.memoryPages),
+          config.config.asJava,
+          config.allowedHosts.asJava,
+          config.allowedPaths.asJava
+        ),
+        config.wasi,
+        functions,
+        memories
+      )
+//      val instance                                                                  = template.instantiate(engine, functions, memories, config.wasi)
       val vm                                                                        = WasmVmImpl(
         index,
         config.killOptions.maxCalls,
@@ -483,7 +483,7 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
 
   // close the current pool
   private[wasm4s] def close(): Unit = availableVms.synchronized {
-    engine.close()
+//    engine.close()
   }
 
   // destroy all vms and clear everything in order to destroy the current pool
@@ -493,7 +493,7 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
     availableVms.clear()
     inUseVms.clear()
     //counter.set(0)
-    templateRef.set(null)
+//    templateRef.set(null)
     creatingRef.set(false)
     lastPluginVersion.set(null)
   }

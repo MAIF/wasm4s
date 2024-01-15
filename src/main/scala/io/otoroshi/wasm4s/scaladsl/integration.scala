@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.stream.Materializer
 import io.otoroshi.wasm4s.scaladsl.implicits._
 import io.otoroshi.wasm4s.scaladsl.security.TlsConfig
-import org.extism.sdk.wasmotoroshi.{WasmOtoroshiHostFunction, WasmOtoroshiHostUserData}
+import org.extism.sdk.{HostFunction, HostUserData}
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import play.api.libs.ws.WSRequest
@@ -37,7 +37,7 @@ trait WasmIntegrationContext {
   def wasmConfig(path: String): Future[Option[WasmConfiguration]] = wasmConfigSync(path).vfuture
   def wasmConfigs(): Future[Seq[WasmConfiguration]]
   def inlineWasmSources(): Future[Seq[WasmSource]] = Seq.empty.vfuture
-  def hostFunctions(config: WasmConfiguration, pluginId: String): Array[WasmOtoroshiHostFunction[_ <: WasmOtoroshiHostUserData]]
+  def hostFunctions(config: WasmConfiguration, pluginId: String): Array[HostFunction[_ <: HostUserData]]
 
   def wasmScriptCache: TrieMap[String, CacheableWasmScript]
   def wasmExecutor: ExecutionContext
@@ -65,7 +65,7 @@ class BasicWasmIntegrationContextWithNoHttpClient[A <: WasmConfiguration](name: 
 
   override def wasmConfigSync(path: String): Option[WasmConfiguration] = store.wasmConfiguration(path)
   override def wasmConfigs(): Future[Seq[WasmConfiguration]] = store.wasmConfigurations().vfuture
-  override def hostFunctions(config: WasmConfiguration, pluginId: String): Array[WasmOtoroshiHostFunction[_ <: WasmOtoroshiHostUserData]] = Array.empty
+  override def hostFunctions(config: WasmConfiguration, pluginId: String): Array[HostFunction[_ <: HostUserData]] = Array.empty
 }
 
 object WasmIntegration {
