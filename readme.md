@@ -55,7 +55,7 @@ class OtoroshiWasmIntegrationContext(env: Env) extends WasmIntegrationContext {
 
   override def wasmConfigs(): Seq[WasmConfiguration] = env.proxyState.allWasmPlugins().map(_.config)
 
-  override def hostFunctions(config: WasmConfiguration, pluginId: String): Array[WasmOtoroshiHostFunction[_ <: WasmOtoroshiHostUserData]] = {
+  override def hostFunctions(config: WasmConfiguration, pluginId: String): Array[HostFunction[_ <: HostUserData]] = {
     HostFunctions.getFunctions(config.asInstanceOf[WasmConfig], pluginId, None)
   }
 }
@@ -85,7 +85,7 @@ class FooWasmIntegrationContext(env: Env) extends WasmIntegrationContext {
   override def mtlsUrl(path: String, tlsConfig: TlsConfig): WSRequest = ???  // we do not provide http call right now ;)
   override def wasmConfig(path: String): Option[WasmConfiguration] = testWasmConfigs.wasmConfiguration(path)
   override def wasmConfigs(): Seq[WasmConfiguration] = testWasmConfigs.wasmConfigurations()
-  override def hostFunctions(config: WasmConfiguration, pluginId: String): Array[WasmOtoroshiHostFunction[_ <: WasmOtoroshiHostUserData]] = Array.empty
+  override def hostFunctions(config: WasmConfiguration, pluginId: String): Array[HostFunction[_ <: HostUserData]] = Array.empty
 }
 ```
 

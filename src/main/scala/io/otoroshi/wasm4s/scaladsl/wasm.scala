@@ -4,6 +4,7 @@ import akka.util.ByteString
 import io.otoroshi.wasm4s.impl.OPAWasmVm
 import io.otoroshi.wasm4s.scaladsl.implicits._
 import io.otoroshi.wasm4s.scaladsl.security._
+import org.extism.sdk.{HostFunction, HostUserData, Plugin}
 import org.extism.sdk.wasmotoroshi._
 import play.api.libs.json._
 
@@ -54,28 +55,28 @@ trait WasmVm {
 
   def call(parameters: WasmFunctionParameters, context: Option[WasmVmData]): Future[Either[JsValue, (String, ResultsWrapper)]]
 
-  def callWithNoParams(functionName: String, result: Int, input: Option[String] = None, parameters: Option[WasmOtoroshiParameters] = None, context: Option[WasmVmData] = None)(implicit ec: ExecutionContext): Future[Either[JsValue, Unit]] = {
+  def callWithNoParams(functionName: String, result: Int, input: Option[String] = None, parameters: Option[Parameters] = None, context: Option[WasmVmData] = None)(implicit ec: ExecutionContext): Future[Either[JsValue, Unit]] = {
     call(WasmFunctionParameters.NoParams(functionName, result, input, parameters), context).map {
       case Left(e) => Left(e)
       case Right(_) => Right(())
     }
   }
 
-  def callWithNoResult(functionName: String, params: WasmOtoroshiParameters, input: Option[String] = None,  resultSize: Option[Int] = None, context: Option[WasmVmData] = None)(implicit ec: ExecutionContext): Future[Either[JsValue, Unit]] = {
+  def callWithNoResult(functionName: String, params: Parameters, input: Option[String] = None,  resultSize: Option[Int] = None, context: Option[WasmVmData] = None)(implicit ec: ExecutionContext): Future[Either[JsValue, Unit]] = {
     call(WasmFunctionParameters.NoResult(functionName, params, input, resultSize), context).map {
       case Left(e) => Left(e)
       case Right(_) => Right(())
     }
   }
 
-  def callExtismFunction(functionName: String, in: String, parameters: Option[WasmOtoroshiParameters] = None, resultSize: Option[Int] = None, context: Option[WasmVmData] = None)(implicit ec: ExecutionContext): Future[Either[JsValue, String]] = {
+  def callExtismFunction(functionName: String, in: String, parameters: Option[Parameters] = None, resultSize: Option[Int] = None, context: Option[WasmVmData] = None)(implicit ec: ExecutionContext): Future[Either[JsValue, String]] = {
     call(WasmFunctionParameters.ExtismFuntionCall(functionName, in, parameters, resultSize), context).map {
       case Left(e) => Left(e)
       case Right((str, _)) => Right(str)
     }
   }
 
-  def callWithParamsAndResult(functionName: String,  params: WasmOtoroshiParameters, result: Int, input: Option[String] = None, context: Option[WasmVmData] = None)(implicit ec: ExecutionContext): Future[Either[JsValue, ResultsWrapper]] = {
+  def callWithParamsAndResult(functionName: String,  params: Parameters, result: Int, input: Option[String] = None, context: Option[WasmVmData] = None)(implicit ec: ExecutionContext): Future[Either[JsValue, ResultsWrapper]] = {
     call(WasmFunctionParameters.BothParamsResults(functionName, params, result, input), context).map {
       case Left(e) => Left(e)
       case Right((_, wrap)) => Right(wrap)
@@ -452,7 +453,7 @@ object BasicWasmConfiguration {
 
 case class BasicWasmConfiguration(
   source: WasmSource,
-  memoryPages: Int = 4,
+  memoryPages: Int = 100,
   functionName: Option[String] = None,
   config: Map[String, String] = Map.empty,
   allowedHosts: Seq[String] = Seq.empty,
@@ -493,12 +494,12 @@ class InMemoryWasmConfigurationStore[A <: WasmConfiguration](store: TrieMap[Stri
 }
 
 object ResultsWrapper {
-  def apply(results: WasmOtoroshiResults): ResultsWrapper                               = new ResultsWrapper(results, None)
-  def apply(results: WasmOtoroshiResults, plugin: WasmOtoroshiInstance): ResultsWrapper =
+  def apply(results: Results): ResultsWrapper                               = new ResultsWrapper(results, None)
+  def apply(results: Results, plugin: Plugin): ResultsWrapper =
     new ResultsWrapper(results, Some(plugin))
 }
 
-case class ResultsWrapper(results: WasmOtoroshiResults, pluginOpt: Option[WasmOtoroshiInstance]) {
+case class ResultsWrapper(results: Results, pluginOpt: Option[Plugin]) {
   def free(): Unit = try {
     if (results.getLength > 0) {
       results.close()
@@ -521,7 +522,7 @@ object CacheableWasmScript {
 case class WasmVmInitOptions(
                               importDefaultHostFunctions: Boolean = true,
                               resetMemory: Boolean = true,
-                              addHostFunctions: (AtomicReference[WasmVmData]) => Seq[WasmOtoroshiHostFunction[_ <: WasmOtoroshiHostUserData]] = _ =>
+                              addHostFunctions: (AtomicReference[WasmVmData]) => Seq[HostFunction[_ <: HostUserData]] = _ =>
                                 Seq.empty
                             )
 
