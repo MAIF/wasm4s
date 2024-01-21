@@ -87,7 +87,7 @@ object OPA extends AwaitCapable {
     Array(),
     opaAbortFunction,
     Optional.empty()
-  )
+  ).withNamespace("env")
 
   def opaPrintln() = new HostFunction[EmptyUserData](
     "opa_println",
@@ -95,7 +95,7 @@ object OPA extends AwaitCapable {
     Array(LibExtism.ExtismValType.I64),
     opaPrintlnFunction,
     Optional.empty()
-  )
+  ).withNamespace("env")
 
   def opaBuiltin0() = new HostFunction[EmptyUserData](
     "opa_builtin0",
@@ -103,7 +103,7 @@ object OPA extends AwaitCapable {
     Array(LibExtism.ExtismValType.I32),
     opaBuiltin0Function,
     Optional.empty()
-  )
+  ).withNamespace("env")
 
   def opaBuiltin1() = new HostFunction[EmptyUserData](
     "opa_builtin1",
@@ -111,7 +111,7 @@ object OPA extends AwaitCapable {
     Array(LibExtism.ExtismValType.I32),
     opaBuiltin1Function,
     Optional.empty()
-  )
+  ).withNamespace("env")
 
   def opaBuiltin2() = new HostFunction[EmptyUserData](
     "opa_builtin2",
@@ -124,7 +124,7 @@ object OPA extends AwaitCapable {
     Array(LibExtism.ExtismValType.I32),
     opaBuiltin2Function,
     Optional.empty()
-  )
+  ).withNamespace("env")
 
   def opaBuiltin3() = new HostFunction[EmptyUserData](
     "opa_builtin3",
@@ -138,7 +138,7 @@ object OPA extends AwaitCapable {
     Array(LibExtism.ExtismValType.I32),
     opaBuiltin3Function,
     Optional.empty()
-  )
+  ).withNamespace("env")
 
   def opaBuiltin4() = new HostFunction[EmptyUserData](
     "opa_builtin4",
@@ -153,7 +153,7 @@ object OPA extends AwaitCapable {
     Array(LibExtism.ExtismValType.I32),
     opaBuiltin4Function,
     Optional.empty()
-  )
+  ).withNamespace("env")
 
   def getFunctions(config: WasmConfiguration): Seq[HostFunctionWithAuthorization] = {
     Seq(
@@ -169,7 +169,7 @@ object OPA extends AwaitCapable {
 
   def getLinearMemories(): Seq[LinearMemory] = {
     Seq(
-      new LinearMemory("memory", "env", new LinearMemoryOptions(1, Optional.empty()))
+      new LinearMemory("memory", "env", new LinearMemoryOptions(4, Optional.empty()))
     )
   }
 
@@ -187,7 +187,8 @@ object OPA extends AwaitCapable {
         plugin.writeBytes(
           value,
           value_buf_len,
-          raw_addr.getValue(0).v.i32
+          raw_addr.getValue(0).v.i32,
+          "env"
         ) == -1
       ) {
         JsString("Cant' write in memory").left
@@ -239,7 +240,8 @@ object OPA extends AwaitCapable {
     plugin.writeBytes(
       input.getBytes(StandardCharsets.UTF_8),
       input_len,
-      baseHeapPtr
+      baseHeapPtr,
+      "env"
     )
 
     val heap_ptr   = baseHeapPtr + input_len
@@ -250,7 +252,7 @@ object OPA extends AwaitCapable {
 
     val ret = plugin.call("opa_eval", ptr, 1)
 
-    val memory = plugin.getMemory("memory")
+    val memory = plugin.getMemory("memory", "env")
 
     val offset: Int    = ret.getValue(0).v.i32
     val arraySize: Int = 65356
