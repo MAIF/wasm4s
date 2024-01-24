@@ -188,7 +188,8 @@ object OPA extends AwaitCapable {
           value,
           value_buf_len,
           raw_addr.getValue(0).v.i32,
-          "env"
+          "env",
+          "memory"
         ) == -1
       ) {
         JsString("Cant' write in memory").left
@@ -241,7 +242,8 @@ object OPA extends AwaitCapable {
       input.getBytes(StandardCharsets.UTF_8),
       input_len,
       baseHeapPtr,
-      "env"
+      "env",
+      "memory"
     )
 
     val heap_ptr   = baseHeapPtr + input_len
@@ -252,7 +254,7 @@ object OPA extends AwaitCapable {
 
     val ret = plugin.call("opa_eval", ptr, 1)
 
-    val memory = plugin.getMemory("memory", "env")
+    val memory = plugin.getLinearMemory("memory", "env")
 
     val offset: Int    = ret.getValue(0).v.i32
     val arraySize: Int = 65356
