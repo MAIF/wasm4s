@@ -11,6 +11,11 @@ class WasmSpec extends munit.FunSuite {
 
   val wasmStore = InMemoryWasmConfigurationStore(
     "basic" -> BasicWasmConfiguration.fromWasiSource(WasmSource(WasmSourceKind.File, "./src/test/resources/basic.wasm")),
+    "kill_options" -> BasicWasmConfiguration
+      .fromWasiSource(WasmSource(WasmSourceKind.File, "./src/test/resources/basic.wasm"))
+      .copy(killOptions = WasmVmKillOptions(
+        maxCalls = 2
+      )),
     "opa" -> BasicWasmConfiguration.fromOpaSource(WasmSource(WasmSourceKind.File, "./src/test/resources/opa.wasm")),
   )
 
@@ -103,20 +108,12 @@ class WasmSpec extends munit.FunSuite {
   }
 
   test("check if an aquired vm is acquired") {
-
-    import wasmIntegration.executionContext
-
     val callCtx = Json.obj("request" -> Json.obj("headers" -> Json.obj("foo" -> "bar"))).stringify
 
     val pool = wasmStore.wasmConfigurationUnsafe("basic").pool(100000)
-
     val vm =  Await.result(pool.getPooledVm(), 10.seconds).asInstanceOf[io.otoroshi.wasm4s.impl.WasmVmImpl]
-
     assertEquals(vm.isAquired(), true)
-
     vm.release()
-
     assertEquals(vm.isAquired(), false)
-
   }
 }

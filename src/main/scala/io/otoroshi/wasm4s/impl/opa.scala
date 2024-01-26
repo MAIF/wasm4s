@@ -254,7 +254,7 @@ object OPA extends AwaitCapable {
 
     val ret = plugin.call("opa_eval", ptr, 1)
 
-    val memory = plugin.getLinearMemory("memory", "env")
+    val memory = plugin.getLinearMemory( "env", "memory")
 
     val offset: Int    = ret.getValue(0).v.i32
     val arraySize: Int = 65356

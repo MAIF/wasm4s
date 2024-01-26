@@ -96,13 +96,18 @@ case class WasmVmImpl(
             case t: Throwable => action.promise.tryFailure(t)
           } finally {
             if (resetMemory) {
-              instance.reset()
+              action.parameters match {
+                case _m: WasmFunctionParameters.ExtismFuntionCall => instance.reset()
+                case _m: WasmFunctionParameters.OPACall => // the memory data will already be overwritten during the next call
+                case _ => instance.resetCustomMemory()
+              }
             }
             pool.ic.logger.debug(s"functions: ${functions.size}")
             pool.ic.logger.debug(s"memories: ${memories.size}")
             // WasmContextSlot.clearCurrentContext()
             // vmDataRef.set(null)
             val count = callCounter.incrementAndGet()
+            println("MAX COUNT", count, maxCalls)
             if (count >= maxCalls) {
               callCounter.set(0)
               if (pool.ic.logger.isDebugEnabled)
