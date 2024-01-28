@@ -112,7 +112,7 @@ case class WasmVmImpl(
               callCounter.set(0)
               if (pool.ic.logger.isDebugEnabled)
                 pool.ic.logger.debug(s"killing vm ${index} with remaining ${inFlight.get()} calls (${count})")
-              destroyAtRelease()
+//              destroyAtRelease()
             }
           }
         }
@@ -142,7 +142,7 @@ case class WasmVmImpl(
 
   def destroyAtRelease(): Unit = {
     ignore()
-    killAtRelease.set(true)
+//    killAtRelease.set(true)
   }
 
   def release(): Unit = {
