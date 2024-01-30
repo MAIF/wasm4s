@@ -12,16 +12,16 @@ rm -rfv ./src/main/resources/win*
 
 mkdir ./src/main/resources/native
 
-curl -L -o "./src/main/resources/native/libextism-aarch64-apple-darwin-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-aarch64-apple-darwin-${EXTISM_VERSION}.tar.gz"
-curl -L -o "./src/main/resources/native/libextism-x86_64-apple-darwin-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-x86_64-apple-darwin-${EXTISM_VERSION}.tar.gz"
+curl -L -o "./src/main/resources/native/libextism-aarch64-apple-darwin-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-aarch64-apple-darwin.tar.gz"
+curl -L -o "./src/main/resources/native/libextism-x86_64-apple-darwin-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-x86_64-apple-darwin.tar.gz"
 
-curl -L -o "./src/main/resources/native/libextism-x86_64-unknown-linux-gnu-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-x86_64-unknown-linux-gnu-${EXTISM_VERSION}.tar.gz"
-curl -L -o "./src/main/resources/native/libextism-aarch64-unknown-linux-gnu-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-aarch64-unknown-linux-gnu-${EXTISM_VERSION}.tar.gz"
+curl -L -o "./src/main/resources/native/libextism-x86_64-unknown-linux-gnu-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-x86_64-unknown-linux-gnu.tar.gz"
+curl -L -o "./src/main/resources/native/libextism-aarch64-unknown-linux-gnu-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-aarch64-unknown-linux-gnu.tar.gz"
 
 # curl -L -o "./src/main/resources/native/libextism-x86_64-pc-windows-gnu-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-x86_64-pc-windows-gnu-${EXTISM_VERSION}.tar.gz"
-curl -L -o "./src/main/resources/native/libextism-x86_64-pc-windows-msvc-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-x86_64-pc-windows-msvc-${EXTISM_VERSION}.tar.gz"
+curl -L -o "./src/main/resources/native/libextism-x86_64-pc-windows-msvc-${EXTISM_VERSION}.tar.gz" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/libextism-x86_64-pc-windows-msvc.tar.gz"
 
-curl -L -o "./lib/extism-${EXTISM_VERSION}.jar" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/extism-0.4.0.jar"
+curl -L -o "./lib/extism-${EXTISM_VERSION}.jar" "https://github.com/${EXTISM_REPO}/extism/releases/download/${EXTISM_VERSION}/extism-${EXTISM_VERSION}.jar"
 
 mkdir ./src/main/resources/darwin-aarch64
 mkdir ./src/main/resources/darwin-x86-64
