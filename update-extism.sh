@@ -43,7 +43,7 @@ tar -xvf "./src/main/resources/native/libextism-x86_64-pc-windows-gnu-${EXTISM_V
 # tar -xvf "./src/main/resources/native/libextism-x86_64-pc-windows-msvc-${EXTISM_VERSION}.tar.gz" --directory ./src/main/resources/native/
 mv ./src/main/resources/native/extism.dll ./src/main/resources/win32-x86-64/extism.dll
 
-# rm -rfv ./src/main/resources/native
+rm -rfv ./src/main/resources/native
 
 # curl -L -o "./src/main/resources/native/libextism-aarch64-unknown-linux-musl-${EXTISM_VERSION}.tar.gz" "https://github.com/extism/extism/releases/download/${EXTISM_VERSION}/libextism-aarch64-unknown-linux-musl-${EXTISM_VERSION}.tar.gz"
 # tar -xvf "./src/main/resources/native/libextism-aarch64-unknown-linux-musl-${EXTISM_VERSION}.tar.gz" --directory ./src/main/resources/native/
