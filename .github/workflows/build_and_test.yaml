@@ -25,4 +25,4 @@ jobs:
       id: run-tests
       run: |
         sh ./update-extism.sh
-        sbt 'clean;+clean-files;+compile;+test'
+        sbt 'clean;+cleanFiles;+compile;+test'
