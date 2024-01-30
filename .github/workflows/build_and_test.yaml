@@ -20,7 +20,7 @@ jobs:
         distribution: 'temurin'
         java-version: 11
     #test wasm4s
-    - uses: coursier/cache-action@v5
+    #- uses: coursier/cache-action@v5
     - name: run-tests
       id: run-tests
       run: |
