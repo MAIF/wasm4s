@@ -11,11 +11,6 @@ class WasmSpec extends munit.FunSuite {
 
   val wasmStore = InMemoryWasmConfigurationStore(
     "basic" -> BasicWasmConfiguration.fromWasiSource(WasmSource(WasmSourceKind.File, "./src/test/resources/basic.wasm")),
-    "kill_options" -> BasicWasmConfiguration
-      .fromWasiSource(WasmSource(WasmSourceKind.File, "./src/test/resources/basic.wasm"))
-      .copy(killOptions = WasmVmKillOptions(
-        maxCalls = 2
-      )),
     "opa" -> BasicWasmConfiguration.fromOpaSource(WasmSource(WasmSourceKind.File, "./src/test/resources/opa.wasm")),
   )
 
