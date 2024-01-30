@@ -7,3 +7,4 @@ darwin-**
 linux-**
 win**
 target
+src/main/resources/native
