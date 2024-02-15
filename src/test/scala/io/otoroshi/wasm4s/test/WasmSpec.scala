@@ -10,6 +10,7 @@ import scala.concurrent.duration.DurationInt
 class WasmSpec extends munit.FunSuite {
 
   val wasmStore = InMemoryWasmConfigurationStore(
+    "basiccp" -> BasicWasmConfiguration.fromWasiSource(WasmSource(WasmSourceKind.ClassPath, "basic.wasm")),
     "basic" -> BasicWasmConfiguration.fromWasiSource(WasmSource(WasmSourceKind.File, "./src/test/resources/basic.wasm")),
     "opa" -> BasicWasmConfiguration.fromOpaSource(WasmSource(WasmSourceKind.File, "./src/test/resources/opa.wasm")),
   )
@@ -110,5 +111,25 @@ class WasmSpec extends munit.FunSuite {
     assertEquals(vm.isAquired(), true)
     vm.release()
     assertEquals(vm.isAquired(), false)
+  }
+
+  test("classpath source should work") {
+
+    import wasmIntegration.executionContext
+
+    val fu = wasmIntegration.withPooledVm(wasmStore.wasmConfigurationUnsafe("basiccp")) { vm =>
+      vm.callExtismFunction(
+        "execute",
+        Json.obj("message" -> "coucou").stringify
+      ).map {
+        case Left(error) => println(s"error: ${error.prettify}")
+        case Right(out) => {
+          assertEquals(out, "{\"input\":{\"message\":\"coucou\"},\"message\":\"yo\"}")
+          println(s"output: ${out}")
+        }
+      }
+    }
+
+    Await.result(fu, 10.seconds)
   }
 }

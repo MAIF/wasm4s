@@ -1,5 +1,6 @@
 package io.otoroshi.wasm4s.scaladsl
 
+import akka.stream.scaladsl.StreamConverters
 import akka.util.ByteString
 import io.otoroshi.wasm4s.impl.OPAWasmVm
 import io.otoroshi.wasm4s.scaladsl.implicits._
@@ -290,6 +291,19 @@ object WasmSourceKind {
       Right(ByteString(Files.readAllBytes(Paths.get(path.replace("file://", ""))))).vfuture
     }
   }
+  case object ClassPath        extends WasmSourceKind {
+    def name: String = "ClassPath"
+    def getWasm(path: String, opts: JsValue)(implicit
+                                             ic: WasmIntegrationContext,
+                                             ec: ExecutionContext
+    ): Future[Either[JsValue, ByteString]] = {
+      if (ic.logger.isDebugEnabled) ic.logger.debug(s"[WasmSourceKind ClassPath] fetching wasm from file: ${path}")
+      implicit val mat = ic.materializer
+      val stream = ic.getClass.getClassLoader.getResourceAsStream(path)
+      StreamConverters.fromInputStream(() => stream)
+        .runFold(ByteString.empty)(_ ++ _).map(bs => Right(bs))
+    }
+  }
 
   def apply(value: String): WasmSourceKind = value.toLowerCase match {
     case "base64"      => Base64
@@ -298,6 +312,7 @@ object WasmSourceKind {
     case "wasmo"       => Wasmo
     case "local"       => Local
     case "file"        => File
+    case "classpath"   => ClassPath
     case _             => Unknown
   }
 }
