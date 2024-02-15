@@ -129,6 +129,7 @@ class WasmIntegration(ic: WasmIntegrationContext) {
   def start(cleanerJobConfig: JsObject): Unit = {
     schedRef.set(scheduler.scheduleWithFixedDelay(() => {
       runVmLoaderJob()
+      runCacheCleanerJob()
       runVmCleanerJob(cleanerJobConfig)
     }, 1000, context.wasmCacheTtl, TimeUnit.MILLISECONDS))
   }
@@ -156,6 +157,25 @@ class WasmIntegration(ic: WasmIntegrationContext) {
             source.getWasm()
           case _ => ()
         }
+      }
+    }
+  }
+
+  def runCacheCleanerJob(): Future[Unit] = {
+    for {
+      inlineSources <- ic.inlineWasmSources()
+      pluginSources <- ic.wasmConfigs().map(_.map(_.source))
+    } yield {
+      val sources = (pluginSources ++ inlineSources).distinct.map(s => (s.cacheKey, s)).toMap
+      val now = System.currentTimeMillis()
+      ic.wasmScriptCache.toSeq.foreach {
+        case (key, CacheableWasmScript.CachedWasmScript(_, createAt)) if (createAt + (ic.wasmCacheTtl * 2)) < now => { // 2 times should be enough
+          sources.get(key) match {
+            case Some(_) => ()
+            case None => ic.wasmScriptCache.remove(key)
+          }
+        }
+        case _ => ()
       }
     }
   }
