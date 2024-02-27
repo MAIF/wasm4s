@@ -283,7 +283,7 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
   private[wasm4s] val availableVms   = new ConcurrentLinkedQueue[WasmVmImpl]()
   private[wasm4s] val inUseVms       = new ConcurrentLinkedQueue[WasmVmImpl]()
   private val lastCacheUpdateTime  = new AtomicLong(System.currentTimeMillis())
-  private val lastCacheUpdateCalls = new AtomicLong(System.currentTimeMillis())
+  private val lastCacheUpdateCalls = new AtomicLong(0L)
   private val creatingRef          = new AtomicBoolean(false)
   private val lastPluginVersion    = new AtomicReference[String](null)
   private val requestsSource       = Source.queue[WasmVmPoolAction](ic.wasmQueueBufferSize, OverflowStrategy.dropTail)
