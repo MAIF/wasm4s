@@ -221,13 +221,13 @@ object WasmSourceKind {
         ec: ExecutionContext
     ): Future[Either[JsValue, ByteString]] = {
       ic.wasmoSettings.flatMap {
-        case Some(settings @ WasmoSettings(url, _, _, kind, _)) => {
+        case Some(settings @ WasmoSettings(url, _, _, kind, _, tlsConfig)) => {
           val (apikeyHeader, apikey) = ApikeyHelper.generate(settings)
           val wasmoUrl = s"$url/wasm/$path"
           val followRedirect = opts.select("follow_redirect").asOpt[Boolean].getOrElse(true)
           val timeout = opts.select("timeout").asOpt[Long].map(_.millis).getOrElse(5.seconds)
           if (ic.logger.isDebugEnabled) ic.logger.debug(s"[WasmSourceKind Wasmo] fetching wasm from source at GET ${wasmoUrl}")
-          ic.url(wasmoUrl)
+          ic.url(wasmoUrl, tlsConfig)
             .withFollowRedirects(followRedirect)
             .withRequestTimeout(timeout)
             .withHttpHeaders(

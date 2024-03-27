@@ -1,6 +1,7 @@
 package io.otoroshi.wasm4s.scaladsl
 
 import io.otoroshi.wasm4s.scaladsl.implicits._
+import io.otoroshi.wasm4s.scaladsl.security.TlsConfig
 import play.api.libs.json._
 
 import scala.util.{Failure, Success, Try}
@@ -11,6 +12,7 @@ case class WasmoSettings(
   clientSecret: String = "admin-api-apikey-secret",
   pluginsFilter: Option[String] = Some("*"),
   legacyAuth: Boolean = false,
+  tlsConfig: Option[TlsConfig] = None,
 ) {
   def json: JsValue = WasmoSettings.format.writes(this)
 }
@@ -24,6 +26,7 @@ object WasmoSettings {
         "clientSecret"  -> o.clientSecret,
         "legacyAuth"  -> o.legacyAuth,
         "pluginsFilter" -> o.pluginsFilter.map(JsString).getOrElse(JsNull).as[JsValue],
+        "tlsConfig" -> o.tlsConfig.map(_.json).getOrElse(JsNull).as[JsValue],
       )
 
     override def reads(json: JsValue): JsResult[WasmoSettings] =
@@ -34,6 +37,7 @@ object WasmoSettings {
           clientSecret = (json \ "clientSecret").asOpt[String].getOrElse("admin-api-apikey-secret"),
           legacyAuth = (json \ "legacyAuth").asOpt[Boolean].getOrElse(false),
           pluginsFilter = (json \ "pluginsFilter").asOpt[String].getOrElse("*").some,
+          tlsConfig = json.select("tls").asOpt(TlsConfig.format).orElse(json.select("tls_config").asOpt(TlsConfig.format))
         )
       } match {
         case Failure(e)  => JsError(e.getMessage)
