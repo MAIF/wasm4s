@@ -1,5 +1,6 @@
 package io.otoroshi.wasm4s.scaladsl
 
+import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.StreamConverters
 import akka.util.ByteString
 import io.otoroshi.wasm4s.impl.OPAWasmVm
@@ -7,6 +8,7 @@ import io.otoroshi.wasm4s.scaladsl.implicits._
 import io.otoroshi.wasm4s.scaladsl.security._
 import org.extism.sdk.{HostFunction, HostUserData, Plugin}
 import org.extism.sdk.wasmotoroshi._
+import org.joda.time.DateTime
 import play.api.libs.json._
 
 import java.nio.file.{Files, Paths}
@@ -321,11 +323,27 @@ case class WasmSource(kind: WasmSourceKind, path: String, opts: JsValue = Json.o
   def json: JsValue                                                                    = WasmSource.format.writes(this)
   def cacheKey                                                                         = s"${kind.name.toLowerCase}://${path}"
   def getConfig()(implicit ic: WasmIntegrationContext, ec: ExecutionContext): Future[Option[WasmConfiguration]] = kind.getConfig(path, opts)
+  def removeFromCache()(implicit ic: WasmIntegrationContext): Option[CacheableWasmScript] = ic.wasmScriptCache.remove(cacheKey)
+  def getFromCache()(implicit ic: WasmIntegrationContext): Option[CacheableWasmScript] = ic.wasmScriptCache.get(cacheKey)
+  def getFailedFromCache()(implicit ic: WasmIntegrationContext): Option[CacheableWasmScript.FailedFetch] = {
+    getFromCache() match {
+      case Some(i @ CacheableWasmScript.FailedFetch(_, _)) => i.some
+      case _ => None
+    }
+  }
+  def isFailed()(implicit ic: WasmIntegrationContext): Boolean = {
+    val cache = ic.wasmScriptCache
+    cache.get(cacheKey) match {
+      case Some(CacheableWasmScript.FailedFetch(_, _)) => true
+      case _                                           => false
+    }
+  }
   def isCached()(implicit ic: WasmIntegrationContext): Boolean = {
     val cache = ic.wasmScriptCache
     cache.get(cacheKey) match {
       case Some(CacheableWasmScript.CachedWasmScript(_, _)) => true
       case Some(CacheableWasmScript.FetchingCachedWasmScript(_, _)) => true
+      case Some(CacheableWasmScript.FailedFetch(_, _)) => true
       case _                                                => false
     }
   }
@@ -343,7 +361,9 @@ case class WasmSource(kind: WasmSourceKind, path: String, opts: JsValue = Json.o
             case Left(err) =>
               if (ic.logger.isErrorEnabled) ic.logger.error(s"[WasmSource] error while wasm fetch at ${path}: ${err}")
               maybeAlready match {
-                case None => cache.remove(cacheKey)
+                case None =>
+                  cache.remove(cacheKey)
+                  cache.put(cacheKey, CacheableWasmScript.FailedFetch(System.currentTimeMillis(), System.currentTimeMillis() + ic.wasmFetchRetryAfterErrorDuration.toMillis))
                 case Some(s) =>
                   // put if back and wait for better times ???
                   if (ic.logger.isWarnEnabled) ic.logger.warn(s"[WasmSource] using old version of ${path} because of fetch error: ${err}")
@@ -362,7 +382,9 @@ case class WasmSource(kind: WasmSourceKind, path: String, opts: JsValue = Json.o
             case e =>
               val err = Json.obj("error" -> s"error while getting wasm from source: ${e.getMessage}")
               maybeAlready match {
-                case None => cache.remove(cacheKey)
+                case None =>
+                  cache.remove(cacheKey)
+                  cache.put(cacheKey, CacheableWasmScript.FailedFetch(System.currentTimeMillis(), System.currentTimeMillis() + ic.wasmFetchRetryAfterErrorDuration.toMillis))
                 case Some(s) =>
                   // put if back and wait ???
                   if (ic.logger.isWarnEnabled) ic.logger.warn(s"[WasmSource] using old version of ${path} because of recover error: ${err}")
@@ -375,21 +397,28 @@ case class WasmSource(kind: WasmSourceKind, path: String, opts: JsValue = Json.o
 
       cache.get(cacheKey) match {
         case None =>
-          if (ic.logger.isDebugEnabled) ic.logger.debug(s"[WasmSource] getWasm nothing in cache for ${path}")
+          if (ic.logger.isDebugEnabled) ic.logger.debug(s"[WasmSource] getWasm nothing in cache for '${path}'")
           fetchAndAddToCache(None)
+        case Some(CacheableWasmScript.FailedFetch(_, until)) if System.currentTimeMillis() > until =>
+          if (ic.logger.isDebugEnabled) ic.logger.debug(s"[WasmSource] getWasm has failed for '${path}'")
+          fetchAndAddToCache(None)
+          Left(Json.obj("error" -> s"unable to access wasm binary. will retry after ${new DateTime(until).toString()}")).vfuture
+        case Some(CacheableWasmScript.FailedFetch(_, until)) =>
+          if (ic.logger.isDebugEnabled) ic.logger.debug(s"[WasmSource] getWasm has failed for '${path}'")
+          Left(Json.obj("error" -> s"unable to access wasm binary. will retry after ${new DateTime(until).toString()}")).vfuture
         case Some(CacheableWasmScript.FetchingWasmScript(fu)) =>
-          if (ic.logger.isDebugEnabled) ic.logger.debug(s"[WasmSource] getWasm fetching for ${path}")
+          if (ic.logger.isDebugEnabled) ic.logger.debug(s"[WasmSource] getWasm fetching for '${path}'")
           fu
         case Some(CacheableWasmScript.FetchingCachedWasmScript(_, script)) =>
-          if (ic.logger.isDebugEnabled) ic.logger.debug(s"[WasmSource] getWasm fetching already cached for ${path}")
+          if (ic.logger.isDebugEnabled) ic.logger.debug(s"[WasmSource] getWasm fetching already cached for '${path}'")
           script.right.future
         case Some(CacheableWasmScript.CachedWasmScript(script, createAt))
           if createAt + ic.wasmCacheTtl < System.currentTimeMillis =>
-          if (ic.logger.isDebugEnabled) ic.logger.debug(s"[WasmSource] getWasm expired cache for ${path} - ${createAt} - ${ic.wasmCacheTtl} - ${createAt + ic.wasmCacheTtl} - ${System.currentTimeMillis}")
+          if (ic.logger.isDebugEnabled) ic.logger.debug(s"[WasmSource] getWasm expired cache for '${path}' - ${createAt} - ${ic.wasmCacheTtl} - ${createAt + ic.wasmCacheTtl} - ${System.currentTimeMillis}")
           fetchAndAddToCache(script.some)
           script.right.vfuture
         case Some(CacheableWasmScript.CachedWasmScript(script, _)) =>
-          if (ic.logger.isDebugEnabled) ic.logger.debug(s"[WasmSource] getWasm cached for ${path}")
+          if (ic.logger.isDebugEnabled) ic.logger.debug(s"[WasmSource] getWasm cached for '${path}'")
           script.right.vfuture
       }
     }
@@ -532,6 +561,7 @@ object CacheableWasmScript {
   case class CachedWasmScript(script: ByteString, createAt: Long)       extends CacheableWasmScript
   case class FetchingWasmScript(f: Future[Either[JsValue, ByteString]]) extends CacheableWasmScript
   case class FetchingCachedWasmScript(f: Future[Either[JsValue, ByteString]], script: ByteString) extends CacheableWasmScript
+  case class FailedFetch(createAt: Long, until: Long) extends CacheableWasmScript
 }
 
 case class WasmVmInitOptions(

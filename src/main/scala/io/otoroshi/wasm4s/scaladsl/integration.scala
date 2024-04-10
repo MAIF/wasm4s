@@ -26,6 +26,7 @@ trait WasmIntegrationContext {
   def materializer: Materializer
   def executionContext: ExecutionContext
 
+  def wasmFetchRetryAfterErrorDuration: FiniteDuration = 5.seconds
   def wasmCacheTtl: Long
   def wasmQueueBufferSize: Int
   def selfRefreshingPools: Boolean
@@ -169,6 +170,7 @@ class WasmIntegration(ic: WasmIntegrationContext) {
       val sources = (pluginSources ++ inlineSources).distinct.map(s => (s.cacheKey, s)).toMap
       val now = System.currentTimeMillis()
       ic.wasmScriptCache.toSeq.foreach {
+        case (key, CacheableWasmScript.FailedFetch(_, until)) if now > until => ic.wasmScriptCache.remove(key)
         case (key, CacheableWasmScript.CachedWasmScript(_, createAt)) if (createAt + (ic.wasmCacheTtl * 2)) < now => { // 2 times should be enough
           sources.get(key) match {
             case Some(_) => ()

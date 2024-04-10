@@ -3,16 +3,14 @@ package io.otoroshi.wasm4s.impl
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl._
 import com.codahale.metrics.UniformReservoir
-import io.otoroshi.wasm4s.scaladsl.CacheableWasmScript.CachedWasmScript
 import io.otoroshi.wasm4s.scaladsl._
 import io.otoroshi.wasm4s.scaladsl.opa._
 import io.otoroshi.wasm4s.scaladsl.implicits._
-import io.otoroshi.wasm4s.impl.WasmVmPoolImpl.logger
 import org.extism.sdk.{HostFunction, HostUserData, Plugin}
 import org.extism.sdk.manifest.{Manifest, MemoryOptions}
 import org.extism.sdk.wasm.WasmSourceResolver
 import org.extism.sdk.wasmotoroshi._
-import play.api.Logger
+import org.joda.time.DateTime
 import play.api.libs.json._
 
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -256,7 +254,6 @@ case class WasmVmPoolAction(promise: Promise[WasmVmImpl], options: WasmVmInitOpt
 
 object WasmVmPoolImpl {
 
-  private[wasm4s] val logger = Logger("otoroshi-wasm-vm-pool")
   private val instances    = new TrieMap[String, WasmVmPoolImpl]()
 
   def allInstances(): Map[String, WasmVmPoolImpl] = instances.synchronized {
@@ -277,7 +274,7 @@ object WasmVmPoolImpl {
 
 class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration], maxCallsBetweenUpdates: Int = 100000, val ic: WasmIntegrationContext) extends WasmVmPool {
 
-  WasmVmPoolImpl.logger.debug("new WasmVmPool")
+  ic.logger.trace("new WasmVmPool")
 
   private val counter              = new AtomicInteger(-1)
   private[wasm4s] val availableVms   = new ConcurrentLinkedQueue[WasmVmImpl]()
@@ -314,6 +311,12 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
             .andThen { case _ =>
               priorityQueue.offer(action)
             }(ic.executionContext)
+        } else if (wcfg.source.isFailed()(ic)) {
+          val until = wcfg.source.getFailedFromCache()(ic).get.until
+          if (until < time) {
+            wcfg.source.removeFromCache()(ic)
+          }
+          action.fail(new RuntimeException(s"accessing wasm binary was impossible. will retry after ${new DateTime(until).toString()}"))
         } else {
           // try to self refresh cache if more call than or time elapsed
           if (ic.selfRefreshingPools && (((time - lastCacheUpdateTime.get()) > ic.wasmCacheTtl) || (lastCacheUpdateCalls.get() > maxCallsBetweenUpdates))) {
@@ -329,7 +332,7 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
           // then we check if the underlying wasmcode + config has not changed since last time
           if (changed) {
             // if so, we destroy all current vms and recreate a new one
-            WasmVmPoolImpl.logger.warn("plugin has changed, destroying old instances")
+            ic.logger.warn("plugin has changed, destroying old instances")
             destroyCurrentVms()
             createVm(wcfg, action.options)
           }
@@ -368,11 +371,15 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
   private def createVm(config: WasmConfiguration, options: WasmVmInitOptions): Unit = synchronized {
     if (creatingRef.compareAndSet(false, true)) {
       val index                                                                     = counter.incrementAndGet()
-      WasmVmPoolImpl.logger.debug(s"creating vm: ${index}")
+      ic.logger.debug(s"creating vm: ${index}")
 
+      if (config.source.isFailed()(ic)) {
+        creatingRef.compareAndSet(true, false)
+        return
+      }
       if (!config.source.isCached()(ic)) {
         // this part should never happen anymore, but just in case
-        WasmVmPoolImpl.logger.warn("fetching missing source")
+        ic.logger.warn("fetching missing source")
         Await.result(config.source.getWasm()(ic, ic.executionContext), 30.seconds)
       }
       lastPluginVersion.set(computeHash(config, config.source.cacheKey, ic.wasmScriptCache))
@@ -381,6 +388,7 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
       val wasm     = cache(key) match {
         case CacheableWasmScript.CachedWasmScript(script, _) => script
         case CacheableWasmScript.FetchingCachedWasmScript(_, script) => script
+        case CacheableWasmScript.FailedFetch(_, until) => throw new RuntimeException(s"accessing wasm binary was impossible. will retry after ${new DateTime(until).toString()}")
         case _ => throw new RuntimeException("unable to get wasm source from cache. this should not happen !")
       }
 //        val hash     = wasm.sha256
@@ -488,7 +496,7 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
 
   // destroy all vms and clear everything in order to destroy the current pool
   private[wasm4s] def destroyCurrentVms(): Unit = availableVms.synchronized {
-    WasmVmPoolImpl.logger.info("destroying all vms")
+    ic.logger.info("destroying all vms")
     availableVms.asScala.foreach(_.destroy())
     availableVms.clear()
     inUseVms.clear()
@@ -509,6 +517,7 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
       .map {
         case CacheableWasmScript.CachedWasmScript(wasm, _) => wasm.sha512
         case CacheableWasmScript.FetchingCachedWasmScript(_, wasm) => wasm.sha512
+        case CacheableWasmScript.FailedFetch(_, _) => "failed"
         case _                                             => "fetching"
       }
       .getOrElse("null")
@@ -532,6 +541,7 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
         val currentHash = computeHash(config, key, cache)
         oldHash != currentHash
       }
+      case Some(CacheableWasmScript.FailedFetch(_, _))      => false
       case _                                                => false
     }
   }
