@@ -14,7 +14,7 @@ object LinearMemories {
     if (config.opa) {
       if (memories.get.isEmpty) {
         memories.set(
-          io.otoroshi.wasm4s.impl.OPA.getLinearMemories()
+          io.otoroshi.wasm4s.impl.OPA.getLinearMemories(config.memoryPages)
         )
       }
       memories.get().toArray

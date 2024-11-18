@@ -2,7 +2,7 @@ package io.otoroshi.wasm4s.test
 
 import io.otoroshi.wasm4s.scaladsl._
 import io.otoroshi.wasm4s.scaladsl.implicits._
-import play.api.libs.json.Json
+import play.api.libs.json.{JsArray, Json}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
@@ -68,13 +68,13 @@ class WasmSpec extends munit.FunSuite {
   }
 
   test("opa manual setup with auto release should work") {
-
     import wasmIntegration.executionContext
-
     val callCtx = Json.obj("request" -> Json.obj("headers" -> Json.obj("foo" -> "bar"))).stringify
+    val cc = callCtx
+    println(s"payload size: ${cc.size}")
     val fu = wasmIntegration.withPooledVm(wasmStore.wasmConfigurationUnsafe("opa")) { vm =>
-      vm.ensureOpaInitialized(callCtx.some).call(
-        WasmFunctionParameters.OPACall("execute", vm.getOpaPointers(), callCtx), None
+      vm.ensureOpaInitialized(cc.some).call(
+        WasmFunctionParameters.OPACall("execute", vm.getOpaPointers(), cc), None
       ).map {
         case Left(error) => println(s"error: ${error.prettify}")
         case Right((out, _)) => {

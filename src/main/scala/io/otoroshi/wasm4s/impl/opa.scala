@@ -167,9 +167,9 @@ object OPA extends AwaitCapable {
     )
   }
 
-  def getLinearMemories(): Seq[LinearMemory] = {
+  def getLinearMemories(size: Int): Seq[LinearMemory] = {
     Seq(
-      new LinearMemory("memory", "env", new LinearMemoryOptions(4, Optional.empty()))
+      new LinearMemory("memory", "env", new LinearMemoryOptions(size, Optional.empty()))
     )
   }
 
@@ -255,7 +255,6 @@ object OPA extends AwaitCapable {
     val ret = plugin.call("opa_eval", ptr, 1)
 
     val memory = plugin.getLinearMemory( "env", "memory")
-
     val offset: Int    = ret.getValue(0).v.i32
     val arraySize: Int = 65356
 
