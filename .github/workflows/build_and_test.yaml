@@ -19,6 +19,7 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 11
+    - uses: sbt/setup-sbt@v1.1.5
     #test wasm4s
     - uses: coursier/cache-action@v5
     - name: run-tests
