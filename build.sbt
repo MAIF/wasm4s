@@ -1,7 +1,7 @@
 import Dependencies.munit
 import xerial.sbt.Sonatype._
 
-lazy val scala212 = "2.12.16"
+lazy val scala212 = "2.12.20"
 lazy val scala213 = "2.13.11"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
