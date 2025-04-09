@@ -97,6 +97,7 @@ case class WasmVmImpl(
               action.parameters match {
                 case _m: WasmFunctionParameters.ExtismFuntionCall => instance.reset()
                 case _m: WasmFunctionParameters.OPACall => // the memory data will already be overwritten during the next call
+                case _m: WasmFunctionParameters.CorazaNextCall =>
                 case _ => instance.resetCustomMemory()
               }
             }
@@ -214,6 +215,10 @@ case class WasmVmImpl(
     ensureOpaInitialized().call(WasmFunctionParameters.OPACall(functionName, opaPointers, in), context)
   }
 
+  def callCorazaNext(functionName: String, in: String, context: Option[WasmVmData] = None)(implicit ec: ExecutionContext): Future[Either[JsValue, (String, ResultsWrapper)]] = {
+    ensureCorazaNextInitialized().call(WasmFunctionParameters.CorazaNextCall(functionName, in), context)
+  }
+
   def ensureOpaInitializedAsync(in: Option[String] = None)(implicit ec: ExecutionContext): Future[WasmVmImpl] = {
     if (!initialized()) {
       call(
@@ -242,6 +247,29 @@ case class WasmVmImpl(
   def ensureOpaInitialized(in: Option[String] = None)(implicit ec: ExecutionContext): WasmVmImpl = {
     Await.result(
       ensureOpaInitializedAsync(in),
+      10.seconds
+    )
+  }
+
+  def ensureCorazaNextInitializedAsync(in: Option[String] = None)(implicit ec: ExecutionContext): Future[WasmVmImpl] = {
+    if (!initialized()) {
+      call(
+        WasmFunctionParameters.CorazaNextCall("initialize"),
+        None
+      ) flatMap {
+        case Left(error) => Future.failed(new RuntimeException(s"coraza next initialize error: ${error.stringify}"))
+        case Right(value) =>
+          initialize()
+          this.vfuture
+      }
+    } else {
+      this.vfuture
+    }
+  }
+
+  def ensureCorazaNextInitialized(in: Option[String] = None)(implicit ec: ExecutionContext): WasmVmImpl = {
+    Await.result(
+      ensureCorazaNextInitializedAsync(in),
       10.seconds
     )
   }
