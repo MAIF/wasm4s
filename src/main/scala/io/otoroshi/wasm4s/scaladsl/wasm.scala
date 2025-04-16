@@ -92,7 +92,7 @@ trait WasmVm {
 
   def ensureOpaInitialized(in: Option[String] = None)(implicit ec: ExecutionContext): WasmVm
 
-  def callCorazaNext(functionName: String, in: String, context: Option[WasmVmData] = None)(implicit ec: ExecutionContext): Future[Either[JsValue, (String, ResultsWrapper)]]
+  def callCorazaNext(functionName: String, in: String, context: Option[WasmVmData] = None, configuration: Option[String] = None)(implicit ec: ExecutionContext): Future[Either[JsValue, (String, ResultsWrapper)]]
 
   def ensureCorazaNextInitializedAsync(in: Option[String] = None)(implicit ec: ExecutionContext): Future[WasmVm]
 

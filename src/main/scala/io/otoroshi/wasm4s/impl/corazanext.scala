@@ -4,17 +4,25 @@ import io.otoroshi.wasm4s.scaladsl.ResultsWrapper
 import io.otoroshi.wasm4s.scaladsl.implicits.BetterSyntax
 import org.extism.sdk.Plugin
 import org.extism.sdk.wasmotoroshi.Results
-import play.api.libs.json.JsValue
+import play.api.libs.json.{JsObject, JsValue, Json}
 
 object CorazaNext {
 
-  def initialize(plugin: Plugin): Either[JsValue, (String, ResultsWrapper)] = {
-    plugin.initializeCoraza()
+  def initialize(plugin: Plugin, configuration: String): Either[JsValue, (String, ResultsWrapper)] = {
+    plugin.initializeCoraza(configuration)
     ("", ResultsWrapper(new Results(0))).right
   }
 
   def evaluate(
       plugin: Plugin,
       input: String
-  ): Either[JsValue, (String, ResultsWrapper)] = (plugin.newCorazaTransaction(input), ResultsWrapper(new Results(0))).right
+  ): Either[JsValue, (String, ResultsWrapper)] = {
+    val transaction = plugin.newCorazaTransaction(input)
+    val errors = plugin.corazaTransactionErrors()
+
+    (Json.stringify(Json.obj(
+      "response" -> transaction,
+      "errors" -> errors
+    )), ResultsWrapper(new Results(0))).right
+  }
 }

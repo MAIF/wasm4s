@@ -215,8 +215,8 @@ case class WasmVmImpl(
     ensureOpaInitialized().call(WasmFunctionParameters.OPACall(functionName, opaPointers, in), context)
   }
 
-  def callCorazaNext(functionName: String, in: String, context: Option[WasmVmData] = None)(implicit ec: ExecutionContext): Future[Either[JsValue, (String, ResultsWrapper)]] = {
-    ensureCorazaNextInitialized().call(WasmFunctionParameters.CorazaNextCall(functionName, in), context)
+  def callCorazaNext(functionName: String, in: String, context: Option[WasmVmData] = None, configuration: Option[String] = None)(implicit ec: ExecutionContext): Future[Either[JsValue, (String, ResultsWrapper)]] = {
+    ensureCorazaNextInitialized().call(WasmFunctionParameters.CorazaNextCall(functionName, in, configuration), context)
   }
 
   def ensureOpaInitializedAsync(in: Option[String] = None)(implicit ec: ExecutionContext): Future[WasmVmImpl] = {
