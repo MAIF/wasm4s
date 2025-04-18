@@ -16,10 +16,16 @@ jobs:
         with:
           java-version: 11
       - uses: sbt/setup-sbt@v1.1.7
-      - uses: coursier/cache-action@v5
-      - name: change version
-        run: |
-          echo 'ThisBuild / version := "${{ inputs.version }}"' > version.sbt
+      - name: Cache Coursier
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/coursier
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-coursier-${{ hashFiles('**/build.sbt') }}
+          restore-keys: |
+            ${{ runner.os }}-coursier-
       - name: build-libs
         id: build-libs
         env:

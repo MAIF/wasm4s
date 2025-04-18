@@ -21,9 +21,9 @@ jobs:
         java-version: 11
     - uses: sbt/setup-sbt@v1.1.5
     #test wasm4s
-    - uses: coursier/cache-action@v5
+    - uses: coursier/cache-action@v6
     - name: run-tests
       id: run-tests
       run: |
         sh ./update-extism.sh
-        sbt '+compile;+test'
+        sbt '+compile;+test' test-wasm4s
