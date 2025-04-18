@@ -174,8 +174,10 @@ object WasmFunctionParameters {
     override def call(plugin: Plugin): Either[JsValue, (String, ResultsWrapper)] = {
       if (functionName == "initialize")
         CorazaNext.initialize(plugin, configuration.getOrElse(""))
-      else
+      else if(functionName == "evaluate")
         CorazaNext.evaluate(plugin, in)
+      else
+        CorazaNext.evaluateResponse(plugin, in)
     }
 
     override def withInput(input: Option[String]): WasmFunctionParameters = this.copy(in = input.get)

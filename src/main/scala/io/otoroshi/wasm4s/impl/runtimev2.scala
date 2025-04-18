@@ -2,10 +2,12 @@ package io.otoroshi.wasm4s.impl
 
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl._
+import akka.util.ByteString
 import com.codahale.metrics.UniformReservoir
 import io.otoroshi.wasm4s.scaladsl._
 import io.otoroshi.wasm4s.scaladsl.opa._
 import io.otoroshi.wasm4s.scaladsl.implicits._
+import net.jpountz.xxhash.XXHashFactory
 import org.extism.sdk.{HostFunction, HostUserData, Plugin}
 import org.extism.sdk.manifest.{Manifest, MemoryOptions}
 import org.extism.sdk.wasm.WasmSourceResolver
@@ -13,6 +15,7 @@ import org.extism.sdk.wasmotoroshi._
 import org.joda.time.DateTime
 import play.api.libs.json._
 
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic._
 import scala.collection.JavaConverters._
@@ -288,8 +291,15 @@ object WasmVmPoolImpl {
     instances.toMap
   }
 
+  private val factory = XXHashFactory.fastestInstance()
+  private  val seed = 0x9747b28c
+
   def forConfig(config: => WasmConfiguration, maxCallsBetweenUpdates: Int = 100000)(implicit ic: WasmIntegrationContext): WasmVmPoolImpl = instances.synchronized {
-    val key = s"${config.source.cacheKey}?mcbu=${maxCallsBetweenUpdates}&cfg=${config.json.stringify.sha512}"
+    val hasher = factory.hash32()
+    val body = config.json.stringify.getBytes(StandardCharsets.UTF_8)
+    val hash = hasher.hash(body, 0, body.length, seed)
+
+    val key = s"${config.source.cacheKey}?mcbu=${maxCallsBetweenUpdates}&cfg=${hash}"
     instances.getOrUpdate(key) {
       new WasmVmPoolImpl(key, config.some, maxCallsBetweenUpdates, ic)
     }
@@ -298,11 +308,15 @@ object WasmVmPoolImpl {
   private[wasm4s] def removePlugin(id: String): Unit = instances.synchronized {
     instances.remove(id)
   }
+
 }
 
 class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration], maxCallsBetweenUpdates: Int = 100000, val ic: WasmIntegrationContext) extends WasmVmPool {
 
   ic.logger.trace("new WasmVmPool")
+
+  private val factory = XXHashFactory.fastestInstance()
+  private  val seed = 0x9747b28c
 
   private val counter              = new AtomicInteger(-1)
   private[wasm4s] val availableVms   = new ConcurrentLinkedQueue[WasmVmImpl]()
@@ -325,6 +339,7 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
   // unqueue actions from the action queue
   private def handleAction(action: WasmVmPoolAction): Unit = try {
     val time = System.currentTimeMillis()
+
     wasmConfig() match {
       case None       =>
         // if we cannot find the current wasm config, something is wrong, we destroy the pool
@@ -357,6 +372,7 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
           val available = hasAvailableVm(wcfg)
           val creating  = isVmCreating()
           val atMax     = atMaxPoolCapacity(wcfg)
+
           // then we check if the underlying wasmcode + config has not changed since last time
           if (changed) {
             // if so, we destroy all current vms and recreate a new one
@@ -534,19 +550,29 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
     lastPluginVersion.set(null)
   }
 
+  private def hash(content: Array[Byte]): String = {
+    val hasher = factory.hash32()
+    hasher.hash(content, 0, content.length, seed) + ""
+  }
+
   // compute the current hash for a tuple (wasmcode + config)
   private def computeHash(
       config: WasmConfiguration,
       key: String,
       cache: TrieMap[String, CacheableWasmScript]
   ): String = {
-    config.json.stringify.sha512 + "#" + cache
+    val bytesConfig = ByteString(config.json.stringify + "#")
+    cache
       .get(key)
       .map {
-        case CacheableWasmScript.CachedWasmScript(wasm, _) => wasm.sha512
-        case CacheableWasmScript.FetchingCachedWasmScript(_, wasm) => wasm.sha512
+        case CacheableWasmScript.CachedWasmScript(wasm, _) =>
+          val content = bytesConfig ++ wasm
+          hash(content.toArray)
+        case CacheableWasmScript.FetchingCachedWasmScript(_, wasm) =>
+          val content = bytesConfig ++ wasm
+          hash(content.toArray)
         case CacheableWasmScript.FailedFetch(_, _) => "failed"
-        case _                                             => "fetching"
+        case _                                     => "fetching"
       }
       .getOrElse("null")
   }

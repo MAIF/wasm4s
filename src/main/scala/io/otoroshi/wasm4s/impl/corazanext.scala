@@ -25,4 +25,17 @@ object CorazaNext {
       "errors" -> errors
     )), ResultsWrapper(new Results(0))).right
   }
+
+  def evaluateResponse(
+                        plugin: Plugin,
+                        input: String
+  ): Either[JsValue, (String, ResultsWrapper)] = {
+    val transaction = plugin.processResponseTransaction(input)
+    val errors = plugin.corazaTransactionErrors()
+
+    (Json.stringify(Json.obj(
+      "response" -> transaction,
+      "errors" -> errors
+    )), ResultsWrapper(new Results(0))).right
+  }
 }

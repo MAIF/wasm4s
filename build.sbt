@@ -68,6 +68,7 @@ lazy val root = (project in file("."))
       "com.typesafe.akka"     %% "akka-stream"    % akkaVersion % "provided",
       "com.typesafe.akka"     %% "akka-http"      % akkaHttpVersion % "provided",
       "com.typesafe.play"     %% "play-json-joda" % playJsonVersion % "provided",
+      "org.lz4"               %%"lz4-java"        % "1.8.0" % "provided",
       "com.auth0"             % "java-jwt"        % "4.2.0" % "provided" excludeAll (excludesJackson: _*),
       "commons-codec"         % "commons-codec"   % "1.16.0" % "provided",
       "net.java.dev.jna"      % "jna"             % "5.13.0" % "provided",
