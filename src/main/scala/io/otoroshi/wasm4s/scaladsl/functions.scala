@@ -167,4 +167,23 @@ object WasmFunctionParameters {
     override def parameters: Option[Parameters]                     = None
     override def resultSize: Option[Int]                                        = None
   }
+
+  case class CorazaNextCall(functionName: String, in: String = "", configuration: Option[String] = None) extends WasmFunctionParameters {
+    override def input: Option[String] = Some(in)
+
+    override def call(plugin: Plugin): Either[JsValue, (String, ResultsWrapper)] = {
+      if (functionName == "initialize")
+        CorazaNext.initialize(plugin, configuration.getOrElse(""))
+      else if(functionName == "evaluate")
+        CorazaNext.evaluate(plugin, in)
+      else
+        CorazaNext.evaluateResponse(plugin, in)
+    }
+
+    override def withInput(input: Option[String]): WasmFunctionParameters = this.copy(in = input.get)
+
+    override def withFunctionName(functionName: String): WasmFunctionParameters = this
+    override def parameters: Option[Parameters]                     = None
+    override def resultSize: Option[Int]                                        = None
+  }
 }

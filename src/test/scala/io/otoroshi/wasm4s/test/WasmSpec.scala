@@ -13,6 +13,7 @@ class WasmSpec extends munit.FunSuite {
     "basiccp" -> BasicWasmConfiguration.fromWasiSource(WasmSource(WasmSourceKind.ClassPath, "basic.wasm")),
     "basic" -> BasicWasmConfiguration.fromWasiSource(WasmSource(WasmSourceKind.File, "./src/test/resources/basic.wasm")),
     "opa" -> BasicWasmConfiguration.fromOpaSource(WasmSource(WasmSourceKind.File, "./src/test/resources/opa.wasm")),
+    "coraza" -> BasicWasmConfiguration.fromOpaSource(WasmSource(WasmSourceKind.File, "./src/test/resources/coraza.wasm")),
   )
 
   implicit val intctx = BasicWasmIntegrationContextWithNoHttpClient("test-wasm4s", wasmStore)
@@ -52,19 +53,64 @@ class WasmSpec extends munit.FunSuite {
     import wasmIntegration.executionContext
 
     val fu = wasmIntegration.withPooledVm(wasmStore.wasmConfigurationUnsafe("basic")) { vm =>
-      vm.callExtismFunction(
-        "execute",
-        Json.obj("message" -> "coucou").stringify
-      ).map {
+      vm.callExtismFunction("execute", Json.obj("message" -> "coucou").stringify).map {
         case Left(error) => println(s"error: ${error.prettify}")
-        case Right(out) => {
+        case Right(out) =>
           assertEquals(out, "{\"input\":{\"message\":\"coucou\"},\"message\":\"yo\"}")
           println(s"output: ${out}")
-        }
       }
     }
 
     Await.result(fu, 10.seconds)
+  }
+
+  test("initialize coraza plugin") {
+    import wasmIntegration.executionContext
+
+    val wasmConfig = BasicWasmConfiguration(
+        source = wasmStore.wasmConfigurationUnsafe("coraza").source,
+        memoryPages = 10000,
+        functionName = None,
+        instances = 1,
+        wasi = true,
+        killOptions = WasmVmKillOptions(
+          maxCalls = 2000,
+          maxMemoryUsage = 0.9,
+          maxAvgCallDuration = 1.day,
+          maxUnusedDuration = 5.minutes
+        ),
+        allowedPaths = Map("/tmp" -> "/tmp"))
+
+    val pool: WasmVmPool = WasmVmPool.forConfigurationWithId("key", wasmConfig)
+
+
+    def getCorazaVm = {
+      val start = System.currentTimeMillis()
+      pool
+        .getPooledVm(WasmVmInitOptions(importDefaultHostFunctions = false, resetMemory = false, _ => Seq.empty))
+        .flatMap { vm =>
+          vm.finitialize {
+              val directives = Seq("Include @recommended-conf",
+                "Include @crs-setup-conf",
+                "SecRequestBodyAccess On",
+                "SecResponseBodyAccess On",
+                "Include @owasp_crs/*.conf",
+                "SecRuleEngine On"
+              )
+
+              vm.callCorazaNext("initialize", "", None, Json.stringify(Json.obj(
+                "directives" -> directives.mkString("\n"),
+                "inspect_bodies" -> true
+              )).some)
+            }
+            .andThen { case _ =>
+              vm.release()
+            }
+        }
+    }
+
+    getCorazaVm
+      .flatMap(_ => getCorazaVm)
   }
 
   test("opa manual setup with auto release should work") {
