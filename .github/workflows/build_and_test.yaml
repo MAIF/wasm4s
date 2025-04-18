@@ -26,4 +26,4 @@ jobs:
       id: run-tests
       run: |
         sh ./update-extism.sh
-        sbt '+compile;+test' test-wasm4s
+        sbt '+compile;+test'
