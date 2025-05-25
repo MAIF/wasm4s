@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.Try
 
 trait AwaitCapable {
   def await[T](future: Future[T], atMost: FiniteDuration = 5.seconds): T = {
@@ -138,12 +139,17 @@ object WasmFunctionParameters {
                               ) extends WasmFunctionParameters {
     override def input: Option[String] = Some(in)
     override def call(plugin: Plugin): Either[JsValue, (String, ResultsWrapper)] = {
-      plugin
-        .call(functionName, input.get.getBytes(StandardCharsets.UTF_8))
-        .right
-        .map { str =>
-          (new String(str, StandardCharsets.UTF_8), ResultsWrapper(new Results(0), plugin))
-        }
+      Try {
+        plugin
+          .call(functionName, input.get.getBytes(StandardCharsets.UTF_8))
+          .right
+          .map { str => (new String(str, StandardCharsets.UTF_8), ResultsWrapper(new Results(0), plugin)) }
+      } recover {
+        case e =>
+          e.printStackTrace()
+          Json.obj("error" -> e.getMessage).left
+      } get
+
     }
 
     override def withInput(input: Option[String]): WasmFunctionParameters       = this.copy(in = input.get)

@@ -35,6 +35,7 @@ jobs:
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
         run: |
+          echo 'ThisBuild / version := "${{ inputs.version }}"' > version.sbt
           mkdir -p ~/.sbt/gpg
           echo "$PGP_SECRET" | base64 --decode > ~/.sbt/gpg/secring.key
           gpg --batch --pinentry-mode=loopback --yes --passphrase "$PGP_PASSPHRASE" --import ~/.sbt/gpg/secring.key

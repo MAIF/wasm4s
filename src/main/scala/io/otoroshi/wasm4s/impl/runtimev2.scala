@@ -46,6 +46,7 @@ case class WasmVmImpl(
                        memories: Array[LinearMemory],
                        functions: Array[HostFunction[_ <: HostUserData]],
                        pool: WasmVmPoolImpl,
+                       wasmVmInitOptions: WasmVmInitOptions,
                        var opaPointers: Option[OPAWasmVm] = None
 ) extends WasmVm {
 
@@ -85,18 +86,25 @@ case class WasmVmImpl(
             val start = System.nanoTime()
             val res   = action.parameters.call(instance)
             callDurationReservoirNs.update(System.nanoTime() - start)
-            if (res.isRight && res.right.get._2.results.getValues() != null) {
-              val ret = res.right.get._2.results.getValues()(0).v.i32
-              if (ret > 7 || ret < 0) { // weird multi thread issues
-                ignore()
-                killAtRelease.set(true)
+
+            if (res.isLeft) {
+              println(res.left.get)
+              action.promise.trySuccess(res)
+            } else {
+              if (res.isRight && res.right.get._2.results.getValues() != null) {
+                val ret = res.right.get._2.results.getValues()(0).v.i32
+                if (ret > 7 || ret < 0) { // weird multi thread issues
+                  ignore()
+                  killAtRelease.set(true)
+                }
               }
+              action.promise.trySuccess(res)
             }
-            action.promise.trySuccess(res)
           } catch {
             case t: Throwable => action.promise.tryFailure(t)
           } finally {
             if (resetMemory) {
+              println("Calling reset")
               action.parameters match {
                 case _m: WasmFunctionParameters.ExtismFuntionCall => instance.reset()
                 case _m: WasmFunctionParameters.OPACall => // the memory data will already be overwritten during the next call
@@ -457,6 +465,7 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
         }
       }
       val memories                                                                  = LinearMemories.getMemories(config)
+
       val instance = new Plugin(
         new Manifest(
           Seq[org.extism.sdk.wasm.WasmSource](source).asJava,
@@ -479,7 +488,8 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
         vmDataRef,
         memories,
         functions,
-        this
+        this,
+        options,
       )
       availableVms.offer(vm)
       creatingRef.compareAndSet(true, false)
@@ -607,6 +617,12 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
     requestsQueue.offer(WasmVmPoolAction(p, options))
     p.future
   }
+
+//  def getPriorityPooledVm(options: WasmVmInitOptions = WasmVmInitOptions.empty()): Future[WasmVm] = {
+//    val p = Promise[WasmVmImpl]()
+//    priorityQueue.offer(WasmVmPoolAction(p, options))
+//    p.future
+//  }
 
   // borrow a vm for sync operations
   def withPooledVm[A](options: WasmVmInitOptions = WasmVmInitOptions.empty())(f: WasmVm => A): Future[A] = {
