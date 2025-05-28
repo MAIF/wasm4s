@@ -75,6 +75,7 @@ case class WasmVmImpl(
       act match {
         case WasmVmAction.WasmVmKillAction         => destroy()
         case action: WasmVmAction.WasmVmCallAction => {
+          var res: Either[JsValue, (String, ResultsWrapper)] = Left(Json.obj("error" -> "not intiializaed"))
           try {
             inFlight.decrementAndGet()
             // action.context.foreach(ctx => WasmContextSlot.setCurrentContext(ctx))
@@ -84,27 +85,35 @@ case class WasmVmImpl(
                 .currentThread()
                 .getName} on path ${action.context.map(_.properties.get("request.path").map(v => new String(v))).getOrElse("--")}")
             val start = System.nanoTime()
-            val res   = action.parameters.call(instance)
+
+            res   = action.parameters.call(instance)
             callDurationReservoirNs.update(System.nanoTime() - start)
 
-            if (res.isLeft) {
-              println(res.left.get)
-              action.promise.trySuccess(res)
-            } else {
-              if (res.isRight && res.right.get._2.results.getValues() != null) {
-                val ret = res.right.get._2.results.getValues()(0).v.i32
-                if (ret > 7 || ret < 0) { // weird multi thread issues
-                  ignore()
-                  killAtRelease.set(true)
-                }
-              }
-              action.promise.trySuccess(res)
-            }
+//            println("#### Calling reset ###")
+//            action.parameters match {
+//              case _m: WasmFunctionParameters.ExtismFuntionCall => instance.reset()
+//              case _m: WasmFunctionParameters.OPACall => // the memory data will already be overwritten during the next call
+//              case _m: WasmFunctionParameters.CorazaNextCall =>
+//              case _ => instance.resetCustomMemory()
+//            }
+//            println("#### Calling reset end ###")
+
+//            if (res.isLeft) {
+//              action.promise.trySuccess(res)
+//            } else {
+//              if (res.isRight && res.right.get._2.results.getValues() != null) {
+//                val ret = res.right.get._2.results.getValues()(0).v.i32
+//                if (ret > 7 || ret < 0) { // weird multi thread issues
+//                  ignore()
+//                  killAtRelease.set(true)
+//                }
+//              }
+//              action.promise.trySuccess(res)
+//            }
           } catch {
             case t: Throwable => action.promise.tryFailure(t)
           } finally {
             if (resetMemory) {
-              println("Calling reset")
               action.parameters match {
                 case _m: WasmFunctionParameters.ExtismFuntionCall => instance.reset()
                 case _m: WasmFunctionParameters.OPACall => // the memory data will already be overwritten during the next call
@@ -123,6 +132,8 @@ case class WasmVmImpl(
                 pool.ic.logger.debug(s"killing vm ${index} with remaining ${inFlight.get()} calls (${count})")
               destroyAtRelease()
             }
+
+            action.promise.trySuccess(res)
           }
         }
       }
