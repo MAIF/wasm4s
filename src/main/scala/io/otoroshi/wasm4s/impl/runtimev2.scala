@@ -46,6 +46,7 @@ case class WasmVmImpl(
                        memories: Array[LinearMemory],
                        functions: Array[HostFunction[_ <: HostUserData]],
                        pool: WasmVmPoolImpl,
+                       wasmVmInitOptions: WasmVmInitOptions,
                        var opaPointers: Option[OPAWasmVm] = None
 ) extends WasmVm {
 
@@ -74,6 +75,7 @@ case class WasmVmImpl(
       act match {
         case WasmVmAction.WasmVmKillAction         => destroy()
         case action: WasmVmAction.WasmVmCallAction => {
+          var res: Either[JsValue, (String, ResultsWrapper)] = Left(Json.obj("error" -> "not intiializaed"))
           try {
             inFlight.decrementAndGet()
             // action.context.foreach(ctx => WasmContextSlot.setCurrentContext(ctx))
@@ -83,16 +85,9 @@ case class WasmVmImpl(
                 .currentThread()
                 .getName} on path ${action.context.map(_.properties.get("request.path").map(v => new String(v))).getOrElse("--")}")
             val start = System.nanoTime()
-            val res   = action.parameters.call(instance)
+
+            res   = action.parameters.call(instance)
             callDurationReservoirNs.update(System.nanoTime() - start)
-            if (res.isRight && res.right.get._2.results.getValues() != null) {
-              val ret = res.right.get._2.results.getValues()(0).v.i32
-              if (ret > 7 || ret < 0) { // weird multi thread issues
-                ignore()
-                killAtRelease.set(true)
-              }
-            }
-            action.promise.trySuccess(res)
           } catch {
             case t: Throwable => action.promise.tryFailure(t)
           } finally {
@@ -109,12 +104,16 @@ case class WasmVmImpl(
             // WasmContextSlot.clearCurrentContext()
             // vmDataRef.set(null)
             val count = callCounter.incrementAndGet()
-            if (count >= maxCalls) {
+
+            pool.ic.logger.debug(s"Call counter ${count}")
+            if (count >= maxCalls || res.isLeft) {
               callCounter.set(0)
               if (pool.ic.logger.isDebugEnabled)
                 pool.ic.logger.debug(s"killing vm ${index} with remaining ${inFlight.get()} calls (${count})")
               destroyAtRelease()
             }
+
+            action.promise.trySuccess(res)
           }
         }
       }
@@ -457,6 +456,7 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
         }
       }
       val memories                                                                  = LinearMemories.getMemories(config)
+
       val instance = new Plugin(
         new Manifest(
           Seq[org.extism.sdk.wasm.WasmSource](source).asJava,
@@ -479,7 +479,8 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
         vmDataRef,
         memories,
         functions,
-        this
+        this,
+        options,
       )
       availableVms.offer(vm)
       creatingRef.compareAndSet(true, false)
@@ -607,6 +608,12 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
     requestsQueue.offer(WasmVmPoolAction(p, options))
     p.future
   }
+
+//  def getPriorityPooledVm(options: WasmVmInitOptions = WasmVmInitOptions.empty()): Future[WasmVm] = {
+//    val p = Promise[WasmVmImpl]()
+//    priorityQueue.offer(WasmVmPoolAction(p, options))
+//    p.future
+//  }
 
   // borrow a vm for sync operations
   def withPooledVm[A](options: WasmVmInitOptions = WasmVmInitOptions.empty())(f: WasmVm => A): Future[A] = {
