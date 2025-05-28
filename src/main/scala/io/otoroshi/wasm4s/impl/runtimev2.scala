@@ -88,28 +88,6 @@ case class WasmVmImpl(
 
             res   = action.parameters.call(instance)
             callDurationReservoirNs.update(System.nanoTime() - start)
-
-//            println("#### Calling reset ###")
-//            action.parameters match {
-//              case _m: WasmFunctionParameters.ExtismFuntionCall => instance.reset()
-//              case _m: WasmFunctionParameters.OPACall => // the memory data will already be overwritten during the next call
-//              case _m: WasmFunctionParameters.CorazaNextCall =>
-//              case _ => instance.resetCustomMemory()
-//            }
-//            println("#### Calling reset end ###")
-
-//            if (res.isLeft) {
-//              action.promise.trySuccess(res)
-//            } else {
-//              if (res.isRight && res.right.get._2.results.getValues() != null) {
-//                val ret = res.right.get._2.results.getValues()(0).v.i32
-//                if (ret > 7 || ret < 0) { // weird multi thread issues
-//                  ignore()
-//                  killAtRelease.set(true)
-//                }
-//              }
-//              action.promise.trySuccess(res)
-//            }
           } catch {
             case t: Throwable => action.promise.tryFailure(t)
           } finally {
@@ -126,7 +104,9 @@ case class WasmVmImpl(
             // WasmContextSlot.clearCurrentContext()
             // vmDataRef.set(null)
             val count = callCounter.incrementAndGet()
-            if (count >= maxCalls) {
+
+            pool.ic.logger.debug(s"Call counter ${count}")
+            if (count >= maxCalls || res.isLeft) {
               callCounter.set(0)
               if (pool.ic.logger.isDebugEnabled)
                 pool.ic.logger.debug(s"killing vm ${index} with remaining ${inFlight.get()} calls (${count})")
