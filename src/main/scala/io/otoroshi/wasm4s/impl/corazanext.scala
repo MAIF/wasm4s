@@ -10,7 +10,14 @@ object CorazaNext {
 
   def initialize(plugin: Plugin, configuration: String): Either[JsValue, (String, ResultsWrapper)] = {
     plugin.initializeCoraza(configuration)
-    ("", ResultsWrapper(new Results(0))).right
+
+    val pluginError = plugin.getExtensionPluginError()
+
+    if(pluginError == null) {
+      ("", ResultsWrapper(new Results(0))).right
+    } else {
+      Json.obj("error" -> pluginError).left
+    }
   }
 
   def evaluate(
@@ -20,10 +27,16 @@ object CorazaNext {
     val transaction = plugin.newCorazaTransaction(input)
     val errors = plugin.corazaTransactionErrors()
 
-    (Json.stringify(Json.obj(
-      "response" -> transaction,
-      "errors" -> errors
-    )), ResultsWrapper(new Results(0))).right
+    val pluginError = plugin.getExtensionPluginError()
+
+    if(pluginError == null) {
+      (Json.stringify(Json.obj(
+        "response" -> transaction,
+        "errors" -> errors
+      )), ResultsWrapper(new Results(0))).right
+    } else {
+      Json.obj("error" -> pluginError).left
+    }
   }
 
   def evaluateResponse(
