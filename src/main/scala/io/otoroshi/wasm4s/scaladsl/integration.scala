@@ -91,9 +91,8 @@ class WasmIntegration(ic: WasmIntegrationContext) {
     if (config.source.kind == WasmSourceKind.Local) {
       ic.wasmConfig(config.source.path) flatMap {
         case None => None.vfuture
-        case Some(localConfig) => {
+        case Some(localConfig) =>
           localConfig.pool(maxCallsBetweenUpdates).getPooledVm().map(vm => Some((vm, localConfig)))
-        }
       }
     } else {
       config.pool(maxCallsBetweenUpdates).getPooledVm().map(vm => Some((vm, config)))

@@ -481,6 +481,7 @@ class WasmVmPoolImpl(stableId: => String, optConfig: => Option[WasmConfiguration
         functions,
         this,
         options,
+        None,
       )
       availableVms.offer(vm)
       creatingRef.compareAndSet(true, false)
