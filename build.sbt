@@ -79,9 +79,9 @@ lazy val root = (project in file("."))
 
 usePgpKeyHex("4EFDC6FC2DEC936B13B7478C2F8C0F4E1D397E7F")
 sonatypeProjectHosting := Some(GitHubHosting("MAIF", "wasm4s", "mathieu.ancelin@serli.com"))
-sonatypeRepository := "https://s01.oss.sonatype.org/service/local"
+sonatypeRepository := "https://ossrh-staging-api.central.sonatype.com/service/local/"
+sonatypeCredentialHost := sonatypeCentralHost
 publishTo := sonatypePublishToBundle.value
-sonatypeCredentialHost := "s01.oss.sonatype.org"
 
 assembly / artifact := {
   val art = (assembly / artifact).value
