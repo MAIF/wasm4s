@@ -14,7 +14,7 @@ first declare the dependency to wasm4s in your `build.sbt`
 libraryDependencies += "fr.maif" %% "wasm4s" % "2.0.0" classifier "bundle"
 ```
 
-**Note**: Starting from version 5.0.0, wasm4s supports Scala 2.13.16 and Scala 3.3.6 (LTS), uses Apache Pekko instead of Akka, and Play Framework 3.x instead of 2.x.
+**Note**: Starting from version 5.0.0, wasm4s supports Scala 2.13.16 and Scala 3, uses Apache Pekko instead of Akka, and Play Framework 3.x instead of 2.x.
 
 the dependency is quite big as it embed multiarch build of wasmtime and extism.
 

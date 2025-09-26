@@ -15,7 +15,7 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
-      - uses: sbt/setup-sbt@v1.1.7
+      - uses: sbt/setup-sbt@v1.1.13
       - name: Cache Coursier
         uses: actions/cache@v4
         with:
@@ -50,6 +50,8 @@ jobs:
           shasum -a 256 ./target/scala-2.13/wasm4s-bundle_2.13-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-2.13/wasm4s-bundle_2.13-${{ inputs.version }}.jar.sha256
           shasum -a 256 ./target/scala-2.12/wasm4s_2.12-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-2.12/wasm4s_2.12-${{ inputs.version }}.jar.sha256
           shasum -a 256 ./target/scala-2.12/wasm4s-bundle_2.12-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-2.12/wasm4s-bundle_2.12-${{ inputs.version }}.jar.sha256
+          shasum -a 256 ./target/scala-3.7.1/wasm4s_3-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-3.7.1/wasm4s_3-${{ inputs.version }}.jar.sha256
+          shasum -a 256 ./target/scala-3.7.1/wasm4s-bundle_3-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-3.7.1/wasm4s-bundle_3-${{ inputs.version }}.jar.sha256
       - name: Release binary and SHA-256 checksum to GitHub
         uses: softprops/action-gh-release@v1
         with:
@@ -63,3 +65,7 @@ jobs:
             ./target/scala-2.12/wasm4s-bundle_2.12-${{ inputs.version }}.jar
             ./target/scala-2.12/wasm4s_2.12-${{ inputs.version }}.jar.sha256
             ./target/scala-2.12/wasm4s-bundle_2.12-${{ inputs.version }}.jar.sha256
+            ./target/scala-3/wasm4s_3-${{ inputs.version }}.jar
+            ./target/scala-3/wasm4s-bundle_3-${{ inputs.version }}.jar
+            ./target/scala-3/wasm4s_3-${{ inputs.version }}.jar.sha256
+            ./target/scala-3/wasm4s-bundle_3-${{ inputs.version }}.jar.sha256
