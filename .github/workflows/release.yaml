@@ -1,21 +1,29 @@
-name: release-wasm4s
-
 on: 
   workflow_dispatch:
     inputs:
       version:
         description: "Version number"
+        required: true
+      branch:
+        description: "Branch to release from"
+        required: true
+        default: "release-wasm4s"
 
 jobs:
   build-and-upload:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.branch }}
+
       - name: setup jdk11
         uses: actions/setup-java@v1
         with:
           java-version: 11
+
       - uses: sbt/setup-sbt@v1.1.13
+
       - name: Cache Coursier
         uses: actions/cache@v4
         with:
@@ -26,6 +34,7 @@ jobs:
           key: ${{ runner.os }}-coursier-${{ hashFiles('**/build.sbt') }}
           restore-keys: |
             ${{ runner.os }}-coursier-
+
       - name: build-libs
         id: build-libs
         env:
@@ -42,14 +51,14 @@ jobs:
           gpg --batch --pinentry-mode=loopback --yes --passphrase "$PGP_PASSPHRASE" --export-secret-key 4EFDC6FC2DEC936B13B7478C2F8C0F4E1D397E7F > ~/.sbt/gpg/secring.gpg
           sh ./update-extism.sh
           sbt ';+compile;+test;+package;+assembly;+doc;+packageDoc;+publishSigned;sonatypeBundleRelease'
-          # sbt ';+compile;+test;+package;+assembly;+publish'
-          # sbt ';+compile;+test;+package;+assembly'
+
       - name: Generate SHA-256
         run: |
           shasum -a 256 ./target/scala-2.13/wasm4s_2.13-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-2.13/wasm4s_2.13-${{ inputs.version }}.jar.sha256
           shasum -a 256 ./target/scala-2.13/wasm4s-bundle_2.13-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-2.13/wasm4s-bundle_2.13-${{ inputs.version }}.jar.sha256
           shasum -a 256 ./target/scala-3.7.1/wasm4s_3-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-3.7.1/wasm4s_3-${{ inputs.version }}.jar.sha256
           shasum -a 256 ./target/scala-3.7.1/wasm4s-bundle_3-${{ inputs.version }}.jar | cut -d ' ' -f 1 > ./target/scala-3.7.1/wasm4s-bundle_3-${{ inputs.version }}.jar.sha256
+
       - name: Release binary and SHA-256 checksum to GitHub
         uses: softprops/action-gh-release@v1
         with:
