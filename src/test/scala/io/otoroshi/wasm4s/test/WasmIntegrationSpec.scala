@@ -14,8 +14,7 @@ class WasmIntegrationSpec extends munit.FunSuite {
 
   val wasmStore = InMemoryWasmConfigurationStore(
     "basic" -> BasicWasmConfiguration.fromWasiSource(WasmSource(WasmSourceKind.File, "./src/test/resources/basic.wasm")),
-    "opa" -> BasicWasmConfiguration.fromOpaSource(WasmSource(WasmSourceKind.File, "./src/test/resources/opa.wasm")),
-    "scalajs" -> BasicWasmConfiguration.fromSource(WasmSource(WasmSourceKind.File, "./src/test/resources/scalajs-test-modules.wasm")),
+    "opa" -> BasicWasmConfiguration.fromOpaSource(WasmSource(WasmSourceKind.File, "./src/test/resources/opa.wasm"))
   )
 
   implicit val intctx: BasicWasmIntegrationContextWithNoHttpClient[BasicWasmConfiguration] = 
